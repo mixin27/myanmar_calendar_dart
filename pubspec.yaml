@@ -15,3 +15,10 @@ dev_dependencies:
   mocktail: ^1.0.4
   test: ^1.26.3
   very_good_analysis: ^10.0.0
+
+topics:
+  - calendar
+  - myanmar-calendar
+  - myanmar-datetime
+  - utility
+  - date-converter
