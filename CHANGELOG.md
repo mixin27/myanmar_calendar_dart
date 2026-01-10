@@ -1,3 +1,8 @@
+## 1.0.1
+
+- Export Shan date related classes
+- Export Chronicle related classes
+
 ## 1.0.0
 
 - Initial release.
