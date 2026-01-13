@@ -1,10 +1,8 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
+import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 
 /// Configuration class for the Myanmar Calendar
 class CalendarConfig {
-  /// Cache configuration
-  // final CacheConfig? cacheConfig;
-
   /// Create config with default values
   const CalendarConfig({
     this.sasanaYearType = 0,
@@ -12,7 +10,7 @@ class CalendarConfig {
     this.gregorianStart = 2361222,
     this.timezoneOffset = 6.5, // Myanmar Time UTC+6:30
     this.defaultLanguage = 'en',
-    // this.cacheConfig,
+    this.customHolidays = const [],
   });
 
   /// Create config with Myanmar Time (UTC+6:30)
@@ -55,6 +53,9 @@ class CalendarConfig {
   /// Default language for translations
   final String defaultLanguage;
 
+  /// Custom holidays defined by the consumer
+  final List<CustomHoliday> customHolidays;
+
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
@@ -71,6 +72,7 @@ class CalendarConfig {
     int? gregorianStart,
     double? timezoneOffset,
     String? defaultLanguage,
+    List<CustomHoliday>? customHolidays,
     CacheConfig? cacheConfig,
   }) {
     return CalendarConfig(
@@ -79,6 +81,7 @@ class CalendarConfig {
       gregorianStart: gregorianStart ?? this.gregorianStart,
       timezoneOffset: timezoneOffset ?? this.timezoneOffset,
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
+      customHolidays: customHolidays ?? this.customHolidays,
       // cacheConfig: cacheConfig ?? this.cacheConfig,
     );
   }

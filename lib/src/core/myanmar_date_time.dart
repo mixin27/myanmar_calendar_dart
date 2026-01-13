@@ -384,7 +384,10 @@ class MyanmarDateTime {
 
   /// Holiday information (cached)
   HolidayInfo get holidayInfo {
-    _holidayInfo ??= _holidayCalculator.getHolidays(myanmarDate);
+    _holidayInfo ??= _holidayCalculator.getHolidays(
+      myanmarDate,
+      customHolidays: config.customHolidays,
+    );
     return _holidayInfo!;
   }
 

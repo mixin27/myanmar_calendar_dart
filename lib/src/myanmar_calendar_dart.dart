@@ -6,6 +6,7 @@ import 'package:myanmar_calendar_dart/src/localization/translation_service.dart'
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
+import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
@@ -73,12 +74,14 @@ class MyanmarCalendar {
   /// [sasanaYearType] - Sasana year calculation method (0, 1, or 2)
   /// [calendarType] - Calendar system (0=British, 1=Gregorian, 2=Julian)
   /// [gregorianStart] - Julian Day Number of Gregorian calendar start
+  /// [customHolidays] - List of custom holidays defined by the consumer
   static void configure({
     Language? language,
     double? timezoneOffset,
     int? sasanaYearType,
     int? calendarType,
     int? gregorianStart,
+    List<CustomHoliday>? customHolidays,
   }) {
     // Update configuration
     _config = _config.copyWith(
@@ -87,6 +90,7 @@ class MyanmarCalendar {
       sasanaYearType: sasanaYearType,
       calendarType: calendarType,
       gregorianStart: gregorianStart,
+      customHolidays: customHolidays,
     );
 
     // Reset service to pick up new configuration
