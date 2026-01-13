@@ -102,6 +102,36 @@ class MyanmarCalendar {
     }
   }
 
+  /// Add a custom holiday to the configuration
+  static void addCustomHoliday(CustomHoliday holiday) {
+    _config = _config.copyWith(
+      customHolidays: [..._config.customHolidays, holiday],
+    );
+  }
+
+  /// Add multiple custom holidays to the configuration
+  static void addCustomHolidays(List<CustomHoliday> holidays) {
+    _config = _config.copyWith(
+      customHolidays: [..._config.customHolidays, ...holidays],
+    );
+  }
+
+  /// Remove a custom holiday from the configuration
+  static void removeCustomHoliday(CustomHoliday holiday) {
+    _config = _config.copyWith(
+      customHolidays: _config.customHolidays
+          .where((h) => h.id != holiday.id)
+          .toList(),
+    );
+  }
+
+  /// Remove all custom holidays from the configuration
+  static void clearCustomHolidays() {
+    _config = _config.copyWith(
+      customHolidays: [],
+    );
+  }
+
   /// Get current configuration
   static CalendarConfig get config => _config;
 

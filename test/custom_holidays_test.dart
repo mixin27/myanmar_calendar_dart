@@ -1,5 +1,4 @@
 import 'package:myanmar_calendar_dart/myanmar_calendar_dart.dart';
-import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:test/test.dart';
 
 void main() {

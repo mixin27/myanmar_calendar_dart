@@ -57,6 +57,7 @@ export 'src/localization/translation_service.dart';
 export 'src/models/astro_info.dart';
 export 'src/models/chronicle_models.dart';
 export 'src/models/complete_date.dart';
+export 'src/models/custom_holiday.dart';
 export 'src/models/holiday_info.dart';
 export 'src/models/myanmar_date.dart';
 export 'src/models/shan_date.dart';
