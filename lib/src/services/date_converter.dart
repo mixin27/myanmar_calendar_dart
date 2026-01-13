@@ -137,7 +137,7 @@ class DateConverter {
 
     // Add time fraction
     final timeFraction = _timeToFraction(hour, minute, second);
-    return jd + timeFraction;
+    return jd + timeFraction - _config.timezoneOffsetInDays;
   }
 
   /// Convert Julian Day Number to Western date
@@ -149,7 +149,10 @@ class DateConverter {
     }
 
     // Calculate if not in cache
-    final westernDate = _calculateJulianToWestern(julianDayNumber);
+    // Add timezone offset to convert UTC JDN to Local Time JDN for calculation
+    final westernDate = _calculateJulianToWestern(
+      julianDayNumber + _config.timezoneOffsetInDays,
+    );
 
     // Store in cache
     _cache.putWesternDate(julianDayNumber, westernDate);
@@ -295,7 +298,7 @@ class DateConverter {
 
     // Add time fraction
     final timeFraction = _timeToFraction(hour, minute, second);
-    return jd + timeFraction;
+    return jd + timeFraction - _config.timezoneOffsetInDays;
   }
 
   /// Convert Julian Day Number to Myanmar date
@@ -307,7 +310,10 @@ class DateConverter {
     }
 
     // Calculate if not in cache
-    final myanmarDate = _calculateJulianToMyanmar(julianDayNumber);
+    // Add timezone offset to convert UTC JDN to Local Time JDN for calculation
+    final myanmarDate = _calculateJulianToMyanmar(
+      julianDayNumber + _config.timezoneOffsetInDays,
+    );
 
     // Store in cache
     _cache.putMyanmarDate(julianDayNumber, myanmarDate);

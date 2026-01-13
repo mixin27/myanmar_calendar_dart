@@ -9,3 +9,5 @@ analyzer:
     comment_references: ignore
     avoid_catches_without_on_clauses: ignore
     avoid_equals_and_hash_code_on_mutable_classes: ignore
+    avoid_print: ignore
+    avoid_redundant_argument_values: ignore

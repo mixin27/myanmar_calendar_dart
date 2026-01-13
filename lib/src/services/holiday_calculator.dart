@@ -18,8 +18,10 @@ library;
 
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
+import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
+import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_constants.dart';
 
 /// Service for calculating holidays in the Myanmar calendar system
@@ -29,7 +31,10 @@ class HolidayCalculator {
   late final CalendarCache _cache;
 
   /// Get all holidays for a Myanmar date
-  HolidayInfo getHolidays(MyanmarDate date) {
+  HolidayInfo getHolidays(
+    MyanmarDate date, {
+    List<CustomHoliday> customHolidays = const [],
+  }) {
     // Try to get from cache
     final cached = _cache.getHolidayInfo(date);
     if (cached != null) {
@@ -37,7 +42,7 @@ class HolidayCalculator {
     }
 
     // Calculate if not in cache
-    final holidayInfo = _calculateHolidays(date);
+    final holidayInfo = _calculateHolidays(date, customHolidays);
 
     // Store in cache
     _cache.putHolidayInfo(date, holidayInfo);
@@ -45,7 +50,10 @@ class HolidayCalculator {
     return holidayInfo;
   }
 
-  HolidayInfo _calculateHolidays(MyanmarDate date) {
+  HolidayInfo _calculateHolidays(
+    MyanmarDate date,
+    List<CustomHoliday> customHolidays,
+  ) {
     final publicHolidays = <String>[];
     final religiousHolidays = <String>[];
     final culturalHolidays = <String>[];
@@ -84,6 +92,20 @@ class HolidayCalculator {
 
     // Other anniversary days
     _addOtherAnniversaryDays(westernDate, otherAnniversaryDays);
+
+    // Custom holidays
+    _addCustomHolidays(
+      date,
+      westernDate,
+      westernJdn,
+      customHolidays,
+      publicHolidays,
+      religiousHolidays,
+      culturalHolidays,
+      otherHolidays,
+      myanmarAnniversaryDays,
+      otherAnniversaryDays,
+    );
 
     return HolidayInfo(
       publicHolidays: publicHolidays,
@@ -793,5 +815,55 @@ class HolidayCalculator {
       2459300, 2459303, 2459323, 2459324,
       2459335, 2459548, 2459573,
     ];
+  }
+
+  /// Add custom holidays defined in configuration
+  void _addCustomHolidays(
+    MyanmarDate myanmarDate,
+    Map<String, int> westernDateMap,
+    double westernJdn,
+    List<CustomHoliday> customHolidays,
+    List<String> publicHolidays,
+    List<String> religiousHolidays,
+    List<String> culturalHolidays,
+    List<String> otherHolidays,
+    List<String> myanmarAnniversaryDays,
+    List<String> otherAnniversaryDays,
+  ) {
+    if (customHolidays.isEmpty) return;
+
+    // Create WesternDate object for predicate
+    // Calculate weekday: 0=Saturday, 1=Sunday, ..., 6=Friday
+    final weekday = (westernJdn.round() + 2) % 7;
+
+    final westernDateObj = WesternDate(
+      year: westernDateMap['year']!,
+      month: westernDateMap['month']!,
+      day: westernDateMap['day']!,
+      hour: 12,
+      minute: 0,
+      second: 0,
+      weekday: weekday,
+      julianDayNumber: westernJdn,
+    );
+
+    for (final holiday in customHolidays) {
+      if (holiday.predicate(myanmarDate, westernDateObj)) {
+        switch (holiday.type) {
+          case HolidayType.public:
+            publicHolidays.add(holiday.name);
+          case HolidayType.religious:
+            religiousHolidays.add(holiday.name);
+          case HolidayType.cultural:
+            culturalHolidays.add(holiday.name);
+          case HolidayType.other:
+            otherHolidays.add(holiday.name);
+          case HolidayType.myanmarAnniversary:
+            myanmarAnniversaryDays.add(holiday.name);
+          case HolidayType.otherAnniversary:
+            otherAnniversaryDays.add(holiday.name);
+        }
+      }
+    }
   }
 }

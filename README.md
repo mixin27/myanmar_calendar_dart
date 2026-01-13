@@ -53,6 +53,7 @@ MyanmarCalendar.configure(
   language: Language.myanmar,
   timezoneOffset: 6.5,
   sasanaYearType: 0, // 0, 1, or 2
+  customHolidays: [ ... ], // Your custom holidays
 );
 
 // Factory methods
@@ -207,6 +208,43 @@ print('Cultural Holidays: ${date.culturalHolidays}');
 
 // Get holiday info directly
 final holidayInfo = MyanmarCalendar.getHolidayInfo(date.myanmarDate);
+```
+
+## Custom Holidays
+
+You can add your own holidays to the calendar. These can be based on either Myanmar dates or Western dates.
+
+```dart
+// Define custom holidays
+final myBirthday = CustomHoliday(
+  id: 'my_birthday',
+  name: 'My Birthday',
+  type: HolidayType.other,
+  predicate: (myanmarDate, westernDate) {
+    // Check against Western date (e.g., July 27)
+    return westernDate.month == 7 && westernDate.day == 27;
+  },
+);
+
+final companyAnniversary = CustomHoliday(
+  id: 'company_anniversary',
+  name: 'Company Anniversary',
+  type: HolidayType.cultural,
+  predicate: (myanmarDate, westernDate) {
+    // Check against Myanmar date (e.g., Tagu 1)
+    return myanmarDate.month == 1 && myanmarDate.day == 1;
+  },
+);
+
+// Configure the calendar with custom holidays
+MyanmarCalendar.configure(
+  language: Language.myanmar,
+  customHolidays: [myBirthday, companyAnniversary],
+);
+
+// You can also add/remove holidays dynamically
+MyanmarCalendar.addCustomHoliday(anotherHoliday);
+MyanmarCalendar.removeCustomHoliday(myBirthday);
 ```
 
 ## AI Prompt Generation

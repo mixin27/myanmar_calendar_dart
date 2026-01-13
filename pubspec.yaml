@@ -1,6 +1,6 @@
 name: myanmar_calendar_dart
 description: A comprehensive dart package for Myanmar calendar with date conversions, astrological calculations, and multi-language support
-version: 1.0.1
+version: 1.1.0
 homepage: https://github.com/mixin27/myanmar_calendar_dart
 repository: https://github.com/mixin27/myanmar_calendar_dart
 issue_tracker: https://github.com/mixin27/myanmar_calendar_dart/issues

@@ -1,3 +1,8 @@
+## 1.1.0
+
+- Add custom holiday support
+- TimezoneOffset config now effective
+
 ## 1.0.1
 
 - Export Shan date related classes
