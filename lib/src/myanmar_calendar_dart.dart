@@ -96,6 +96,9 @@ class MyanmarCalendar {
     // Reset service to pick up new configuration
     _service = null;
 
+    // Clear holiday cache to ensure new custom holidays are picked up
+    cache.clearHolidayInfoCache();
+
     // Update translation service language
     if (language != null) {
       TranslationService.setLanguage(language);
@@ -107,6 +110,7 @@ class MyanmarCalendar {
     _config = _config.copyWith(
       customHolidays: [..._config.customHolidays, holiday],
     );
+    cache.clearHolidayInfoCache();
   }
 
   /// Add multiple custom holidays to the configuration
@@ -114,6 +118,7 @@ class MyanmarCalendar {
     _config = _config.copyWith(
       customHolidays: [..._config.customHolidays, ...holidays],
     );
+    cache.clearHolidayInfoCache();
   }
 
   /// Remove a custom holiday from the configuration
@@ -123,6 +128,7 @@ class MyanmarCalendar {
           .where((h) => h.id != holiday.id)
           .toList(),
     );
+    cache.clearHolidayInfoCache();
   }
 
   /// Remove all custom holidays from the configuration
@@ -130,6 +136,7 @@ class MyanmarCalendar {
     _config = _config.copyWith(
       customHolidays: [],
     );
+    cache.clearHolidayInfoCache();
   }
 
   /// Get current configuration

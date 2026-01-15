@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Fix custom holidays are not passed down to calendar service
+
 ## 1.1.0
 
 - Add custom holiday support
