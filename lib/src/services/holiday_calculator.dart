@@ -35,8 +35,10 @@ class HolidayCalculator {
     MyanmarDate date, {
     List<CustomHoliday> customHolidays = const [],
   }) {
+    final key = _generateCacheKey(date, customHolidays);
+
     // Try to get from cache
-    final cached = _cache.getHolidayInfo(date);
+    final cached = _cache.getHolidayInfoByKey(key);
     if (cached != null) {
       return cached;
     }
@@ -45,9 +47,20 @@ class HolidayCalculator {
     final holidayInfo = _calculateHolidays(date, customHolidays);
 
     // Store in cache
-    _cache.putHolidayInfo(date, holidayInfo);
+    _cache.putHolidayInfoByKey(key, holidayInfo);
 
     return holidayInfo;
+  }
+
+  String _generateCacheKey(
+    MyanmarDate date,
+    List<CustomHoliday> customHolidays,
+  ) {
+    final dateKey = '${date.year}-${date.month}-${date.day}';
+    if (customHolidays.isEmpty) return dateKey;
+
+    final holidayIds = customHolidays.map((h) => h.id).toList()..sort();
+    return '$dateKey|${holidayIds.join(',')}';
   }
 
   HolidayInfo _calculateHolidays(

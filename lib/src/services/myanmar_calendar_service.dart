@@ -60,6 +60,7 @@ class MyanmarCalendarService {
     _initializeServices();
     _setLanguage(defaultLanguage);
   }
+
   final CalendarConfig _config;
   final CalendarCache _cache;
   late final DateConverter _dateConverter;
@@ -186,7 +187,10 @@ class MyanmarCalendarService {
 
   /// Get holiday information for a Myanmar date
   HolidayInfo getHolidayInfo(MyanmarDate date) {
-    return _holidayCalculator.getHolidays(date);
+    return _holidayCalculator.getHolidays(
+      date,
+      customHolidays: _config.customHolidays,
+    );
   }
 
   /// Format Myanmar date as string
@@ -230,7 +234,10 @@ class MyanmarCalendarService {
     );
     final shanDate = ShanDate.fromMyanmarDate(myanmarDate);
     final astroInfo = _astroCalculator.calculate(myanmarDate);
-    final holidayInfo = _holidayCalculator.getHolidays(myanmarDate);
+    final holidayInfo = _holidayCalculator.getHolidays(
+      myanmarDate,
+      customHolidays: _config.customHolidays,
+    );
 
     final completeDate = CompleteDate(
       western: westernDate,

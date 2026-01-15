@@ -415,6 +415,16 @@ class CalendarCache {
     }
 
     final key = _generateMyanmarDateKey(myanmarDate);
+    return getHolidayInfoByKey(key);
+  }
+
+  /// Get cached HolidayInfo by key
+  HolidayInfo? getHolidayInfoByKey(String key) {
+    if (!_config.enableCaching) {
+      _misses++;
+      return null;
+    }
+
     final cached = _holidayInfoCache.get(key);
 
     if (cached != null) {
@@ -430,6 +440,12 @@ class CalendarCache {
   void putHolidayInfo(dynamic myanmarDate, HolidayInfo holidayInfo) {
     if (!_config.enableCaching) return;
     final key = _generateMyanmarDateKey(myanmarDate);
+    putHolidayInfoByKey(key, holidayInfo);
+  }
+
+  /// Cache HolidayInfo by key
+  void putHolidayInfoByKey(String key, HolidayInfo holidayInfo) {
+    if (!_config.enableCaching) return;
     _holidayInfoCache.put(key, holidayInfo);
   }
 
