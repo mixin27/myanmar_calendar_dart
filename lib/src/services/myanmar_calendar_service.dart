@@ -40,7 +40,7 @@ class MyanmarCalendarService {
     CalendarConfig? config,
     CacheConfig? cacheConfig,
     Language? defaultLanguage,
-  }) : _config = config ?? const CalendarConfig(),
+  }) : _config = config ?? CalendarConfig.global,
        _cache = CalendarCache.independent(
          config: cacheConfig ?? const CacheConfig(),
        ),
@@ -54,7 +54,7 @@ class MyanmarCalendarService {
   MyanmarCalendarService.withGlobalCache({
     CalendarConfig? config,
     Language? defaultLanguage,
-  }) : _config = config ?? const CalendarConfig(),
+  }) : _config = config ?? CalendarConfig.global,
        _cache = CalendarCache.global(), // Use global cache
        _formatService = FormatService() {
     _initializeServices();

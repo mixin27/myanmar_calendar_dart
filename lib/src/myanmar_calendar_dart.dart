@@ -61,7 +61,6 @@ class MyanmarCalendar {
 
   // Private static instances
   static MyanmarCalendarService? _service;
-  static CalendarConfig _config = const CalendarConfig();
 
   // ============================================================================
   // CONFIGURATION
@@ -84,7 +83,7 @@ class MyanmarCalendar {
     List<CustomHoliday>? customHolidays,
   }) {
     // Update configuration
-    _config = _config.copyWith(
+    CalendarConfig.global = CalendarConfig.global.copyWith(
       defaultLanguage: language?.code,
       timezoneOffset: timezoneOffset,
       sasanaYearType: sasanaYearType,
@@ -107,24 +106,24 @@ class MyanmarCalendar {
 
   /// Add a custom holiday to the configuration
   static void addCustomHoliday(CustomHoliday holiday) {
-    _config = _config.copyWith(
-      customHolidays: [..._config.customHolidays, holiday],
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      customHolidays: [...CalendarConfig.global.customHolidays, holiday],
     );
     cache.clearHolidayInfoCache();
   }
 
   /// Add multiple custom holidays to the configuration
   static void addCustomHolidays(List<CustomHoliday> holidays) {
-    _config = _config.copyWith(
-      customHolidays: [..._config.customHolidays, ...holidays],
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      customHolidays: [...CalendarConfig.global.customHolidays, ...holidays],
     );
     cache.clearHolidayInfoCache();
   }
 
   /// Remove a custom holiday from the configuration
   static void removeCustomHoliday(CustomHoliday holiday) {
-    _config = _config.copyWith(
-      customHolidays: _config.customHolidays
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      customHolidays: CalendarConfig.global.customHolidays
           .where((h) => h.id != holiday.id)
           .toList(),
     );
@@ -133,19 +132,19 @@ class MyanmarCalendar {
 
   /// Remove all custom holidays from the configuration
   static void clearCustomHolidays() {
-    _config = _config.copyWith(
+    CalendarConfig.global = CalendarConfig.global.copyWith(
       customHolidays: [],
     );
     cache.clearHolidayInfoCache();
   }
 
   /// Get current configuration
-  static CalendarConfig get config => _config;
+  static CalendarConfig get config => CalendarConfig.global;
 
   /// Get the service instance (lazy initialization)
   static MyanmarCalendarService get _serviceInstance {
     // Service uses global cache automatically
-    _service ??= MyanmarCalendarService.withGlobalCache(config: _config);
+    _service ??= MyanmarCalendarService.withGlobalCache(config: config);
     return _service!;
   }
 
@@ -191,7 +190,7 @@ class MyanmarCalendar {
   /// Returns a [MyanmarDateTime] representing the current date and time
   /// in the configured timezone.
   static MyanmarDateTime today() {
-    return MyanmarDateTime.now(config: _config);
+    return MyanmarDateTime.now(config: config);
   }
 
   /// Get current Myanmar date and time
@@ -225,7 +224,7 @@ class MyanmarCalendar {
       hour: hour,
       minute: minute,
       second: second,
-      config: _config,
+      config: config,
     );
   }
 
@@ -253,7 +252,7 @@ class MyanmarCalendar {
       hour: hour,
       minute: minute,
       second: second,
-      config: _config,
+      config: config,
     );
   }
 
@@ -267,7 +266,7 @@ class MyanmarCalendar {
   /// final myanmarDate = MyanmarCalendar.fromDateTime(dartDate);
   /// ```
   static MyanmarDateTime fromDateTime(DateTime dateTime) {
-    return MyanmarDateTime.fromDateTime(dateTime, config: _config);
+    return MyanmarDateTime.fromDateTime(dateTime, config: config);
   }
 
   /// Create Myanmar date from Julian Day Number
@@ -276,7 +275,7 @@ class MyanmarCalendar {
   /// Useful for astronomical calculations or when working with
   /// external calendar systems.
   static MyanmarDateTime fromJulianDay(double julianDayNumber) {
-    return MyanmarDateTime.fromJulianDay(julianDayNumber, config: _config);
+    return MyanmarDateTime.fromJulianDay(julianDayNumber, config: config);
   }
 
   /// Create Myanmar date from milliseconds since epoch
@@ -289,7 +288,7 @@ class MyanmarCalendar {
     return MyanmarDateTime.fromMillisecondsSinceEpoch(
       milliseconds,
       isUtc: isUtc,
-      config: _config,
+      config: config,
     );
   }
 
@@ -297,7 +296,7 @@ class MyanmarCalendar {
   ///
   /// Converts Unix timestamp (seconds since epoch) to Myanmar date.
   static MyanmarDateTime fromTimestamp(int timestamp) {
-    return MyanmarDateTime.fromTimestamp(timestamp, config: _config);
+    return MyanmarDateTime.fromTimestamp(timestamp, config: config);
   }
 
   // ============================================================================
@@ -322,7 +321,7 @@ class MyanmarCalendar {
   /// }
   /// ```
   static MyanmarDateTime? parseMyanmar(String dateString) {
-    return MyanmarDateTime.parseMyanmar(dateString, config: _config);
+    return MyanmarDateTime.parseMyanmar(dateString, config: config);
   }
 
   /// Parse Western date string
@@ -338,7 +337,7 @@ class MyanmarCalendar {
   /// }
   /// ```
   static MyanmarDateTime? parseWestern(String dateString) {
-    return MyanmarDateTime.parseWestern(dateString, config: _config);
+    return MyanmarDateTime.parseWestern(dateString, config: config);
   }
 
   // ============================================================================
@@ -581,7 +580,7 @@ class MyanmarCalendar {
       date.myanmarDate,
       months,
     );
-    return MyanmarDateTime.fromMyanmarDate(myanmarDate, config: _config);
+    return MyanmarDateTime.fromMyanmarDate(myanmarDate, config: config);
   }
 
   /// Find next occurrence of a moon phase
@@ -601,7 +600,7 @@ class MyanmarCalendar {
       startDate.myanmarDate,
       moonPhase,
     );
-    return MyanmarDateTime.fromMyanmarDate(nextDate, config: _config);
+    return MyanmarDateTime.fromMyanmarDate(nextDate, config: config);
   }
 
   /// Find all sabbath days in a month
@@ -611,7 +610,7 @@ class MyanmarCalendar {
   static List<MyanmarDateTime> findSabbathDays(int year, int month) {
     final sabbathDates = CalendarUtils.findSabbathDaysInMonth(year, month);
     return sabbathDates
-        .map((date) => MyanmarDateTime.fromMyanmarDate(date, config: _config))
+        .map((date) => MyanmarDateTime.fromMyanmarDate(date, config: config))
         .toList();
   }
 
@@ -679,7 +678,7 @@ class MyanmarCalendar {
     List<DateTime> westernDates,
   ) {
     return westernDates
-        .map((date) => MyanmarDateTime.fromDateTime(date, config: _config))
+        .map((date) => MyanmarDateTime.fromDateTime(date, config: config))
         .toList();
   }
 
@@ -705,7 +704,7 @@ class MyanmarCalendar {
             dateMap['year']!,
             dateMap['month']!,
             dateMap['day']!,
-            config: _config,
+            config: config,
           ),
         )
         .toList();
@@ -731,11 +730,11 @@ class MyanmarCalendar {
     return {
       'packageInfo': packageInfo,
       'configuration': {
-        'sasanaYearType': _config.sasanaYearType,
-        'calendarType': _config.calendarType,
-        'gregorianStart': _config.gregorianStart,
-        'timezoneOffset': _config.timezoneOffset,
-        'defaultLanguage': _config.defaultLanguage,
+        'sasanaYearType': config.sasanaYearType,
+        'calendarType': config.calendarType,
+        'gregorianStart': config.gregorianStart,
+        'timezoneOffset': config.timezoneOffset,
+        'defaultLanguage': config.defaultLanguage,
       },
       'currentLanguage': currentLanguage.code,
       'supportedLanguages': supportedLanguages
@@ -754,7 +753,7 @@ class MyanmarCalendar {
   /// Resets all configuration to package defaults.
   /// Useful for testing or clearing custom configurations.
   static void reset() {
-    _config = const CalendarConfig();
+    CalendarConfig.global = const CalendarConfig();
     _service = null;
     TranslationService.setLanguage(Language.english);
   }

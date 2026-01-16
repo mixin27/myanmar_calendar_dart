@@ -62,7 +62,7 @@ class MyanmarDateTime {
     double julianDayNumber, {
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     return MyanmarDateTime._(
@@ -78,7 +78,7 @@ class MyanmarDateTime {
     WesternDate westernDate, {
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     return MyanmarDateTime._(
@@ -94,7 +94,7 @@ class MyanmarDateTime {
     MyanmarDate myanmarDate, {
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     return MyanmarDateTime._(
@@ -115,7 +115,7 @@ class MyanmarDateTime {
     int second = 0,
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     final jdn = converter.myanmarToJulian(
@@ -145,7 +145,7 @@ class MyanmarDateTime {
     int second = 0,
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     final jdn = converter.westernToJulian(
@@ -170,7 +170,7 @@ class MyanmarDateTime {
     DateTime dateTime, {
     CalendarConfig? config,
   }) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     final jdn = converter.westernToJulian(
@@ -195,7 +195,7 @@ class MyanmarDateTime {
 
   /// Creates Myanmar DateTime from current date/time
   factory MyanmarDateTime.now({CalendarConfig? config}) {
-    final cfg = config ?? const CalendarConfig();
+    final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
     // Get current UTC time and convert to Julian Day Number

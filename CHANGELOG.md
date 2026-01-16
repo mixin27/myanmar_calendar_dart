@@ -1,3 +1,8 @@
+## 1.1.2
+
+- Refactor CalendarConfig to use factory constructors for global config access without circular dependency
+- Fixed global config access issue
+
 ## 1.1.1
 
 - Fix custom holidays are not passed down to calendar service
