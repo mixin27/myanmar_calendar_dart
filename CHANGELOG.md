@@ -1,3 +1,8 @@
+## 1.1.3
+
+- Fixed custom holidays cache
+- Fixed `CompleteDate` isToday wrong condition
+
 ## 1.1.2
 
 - Refactor CalendarConfig to use factory constructors for global config access without circular dependency
