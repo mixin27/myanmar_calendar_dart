@@ -1,4 +1,3 @@
-import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 
 /// Configuration class for the Myanmar Calendar
@@ -22,6 +21,15 @@ class CalendarConfig {
   factory CalendarConfig.ancientMyanmarTime() {
     return const CalendarConfig(timezoneOffset: 6.41306, defaultLanguage: 'my');
   }
+
+  /// Package-wide global configuration
+  static CalendarConfig _global = const CalendarConfig();
+
+  /// Get the package-wide global configuration
+  static CalendarConfig get global => _global;
+
+  /// Set the package-wide global configuration
+  static set global(CalendarConfig config) => _global = config;
 
   /// Sasana year type
   ///
@@ -73,7 +81,6 @@ class CalendarConfig {
     double? timezoneOffset,
     String? defaultLanguage,
     List<CustomHoliday>? customHolidays,
-    CacheConfig? cacheConfig,
   }) {
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
@@ -82,7 +89,6 @@ class CalendarConfig {
       timezoneOffset: timezoneOffset ?? this.timezoneOffset,
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
       customHolidays: customHolidays ?? this.customHolidays,
-      // cacheConfig: cacheConfig ?? this.cacheConfig,
     );
   }
 }
