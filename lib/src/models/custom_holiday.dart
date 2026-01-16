@@ -59,4 +59,7 @@ class CustomHoliday {
 
   @override
   int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'CustomHoliday(id: $id, name: $name, type: $type)';
 }

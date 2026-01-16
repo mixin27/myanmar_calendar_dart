@@ -52,8 +52,9 @@ class HolidayInfo {
   String toString() {
     return 'HolidayInfo(public: $publicHolidays, '
         'religious: $religiousHolidays, '
-        'cultural: $culturalHolidays), other: $otherHolidays), '
-        'myanmarAnniversary: $myanmarAnniversaryDays), otherAnniversary: '
-        '$otherAnniversaryDays)';
+        'cultural: $culturalHolidays, '
+        'other: $otherHolidays, '
+        'myanmarAnniversary: $myanmarAnniversaryDays, '
+        'otherAnniversary: $otherAnniversaryDays)';
   }
 }

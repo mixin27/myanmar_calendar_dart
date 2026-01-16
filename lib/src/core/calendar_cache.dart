@@ -1,5 +1,6 @@
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
+import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
@@ -278,13 +279,16 @@ class CalendarCache {
   // ============================================================================
 
   /// Get cached CompleteDate
-  CompleteDate? getCompleteDate(DateTime dateTime) {
+  CompleteDate? getCompleteDate(
+    DateTime dateTime, {
+    List<CustomHoliday>? customHolidays,
+  }) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+    final key = _generateCompleteDateKey(dateTime, customHolidays);
     final cached = _completeDateCache.get(key);
 
     if (cached != null) {
@@ -297,9 +301,13 @@ class CalendarCache {
   }
 
   /// Cache CompleteDate
-  void putCompleteDate(DateTime dateTime, CompleteDate completeDate) {
+  void putCompleteDate(
+    DateTime dateTime,
+    CompleteDate completeDate, {
+    List<CustomHoliday>? customHolidays,
+  }) {
     if (!_config.enableCaching) return;
-    final key = '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+    final key = _generateCompleteDateKey(dateTime, customHolidays);
     _completeDateCache.put(key, completeDate);
   }
 
@@ -454,6 +462,17 @@ class CalendarCache {
       return '${myanmarDate['year']}-${myanmarDate['month']}-${myanmarDate['day']}';
     }
     return '${myanmarDate.year}-${myanmarDate.month}-${myanmarDate.day}';
+  }
+
+  String _generateCompleteDateKey(
+    DateTime dateTime,
+    List<CustomHoliday>? customHolidays,
+  ) {
+    final dateKey = '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+    if (customHolidays == null || customHolidays.isEmpty) return dateKey;
+
+    final holidayIds = customHolidays.map((h) => h.id).toList()..sort();
+    return '$dateKey|${holidayIds.join(',')}';
   }
 
   // ============================================================================

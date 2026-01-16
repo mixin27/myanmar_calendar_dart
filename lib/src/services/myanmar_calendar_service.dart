@@ -222,7 +222,10 @@ class MyanmarCalendarService {
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
   CompleteDate getCompleteDate(DateTime dateTime) {
     // Try to get from cache
-    final cached = _cache.getCompleteDate(dateTime);
+    final cached = _cache.getCompleteDate(
+      dateTime,
+      customHolidays: _config.customHolidays,
+    );
     if (cached != null) {
       return cached;
     }
@@ -248,7 +251,11 @@ class MyanmarCalendarService {
     );
 
     // Store in cache
-    _cache.putCompleteDate(dateTime, completeDate);
+    _cache.putCompleteDate(
+      dateTime,
+      completeDate,
+      customHolidays: _config.customHolidays,
+    );
 
     return completeDate;
   }
@@ -373,10 +380,7 @@ class MyanmarCalendarService {
 
       return const ValidationResult(isValid: true);
     } on Exception catch (e) {
-      return ValidationResult(
-        isValid: false,
-        error: 'Invalid date: $e',
-      );
+      return ValidationResult(isValid: false, error: 'Invalid date: $e');
     }
   }
 }

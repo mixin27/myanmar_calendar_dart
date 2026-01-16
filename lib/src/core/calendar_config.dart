@@ -91,4 +91,9 @@ class CalendarConfig {
       customHolidays: customHolidays ?? this.customHolidays,
     );
   }
+
+  @override
+  String toString() {
+    return 'CalendarConfig(sasanaYearType: $sasanaYearType, calendarType: $calendarType, gregorianStart: $gregorianStart, timezoneOffset: $timezoneOffset, defaultLanguage: $defaultLanguage, customHolidays: $customHolidays)';
+  }
 }

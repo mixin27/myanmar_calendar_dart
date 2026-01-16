@@ -865,16 +865,22 @@ class HolidayCalculator {
         switch (holiday.type) {
           case HolidayType.public:
             publicHolidays.add(holiday.name);
+            break;
           case HolidayType.religious:
             religiousHolidays.add(holiday.name);
+            break;
           case HolidayType.cultural:
             culturalHolidays.add(holiday.name);
+            break;
           case HolidayType.other:
             otherHolidays.add(holiday.name);
+            break;
           case HolidayType.myanmarAnniversary:
             myanmarAnniversaryDays.add(holiday.name);
+            break;
           case HolidayType.otherAnniversary:
             otherAnniversaryDays.add(holiday.name);
+            break;
         }
       }
     }

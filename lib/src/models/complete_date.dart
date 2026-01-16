@@ -265,7 +265,9 @@ class CompleteDate {
   /// Checks if it is today.
   bool get isToday {
     final now = DateTime.now();
-    return now.year == now.year && now.month == now.month && now.day == now.day;
+    return western.year == now.year &&
+        western.month == now.month &&
+        western.day == now.day;
   }
 
   /// Gets all holidays as a combined list

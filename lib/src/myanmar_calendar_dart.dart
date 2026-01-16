@@ -96,7 +96,9 @@ class MyanmarCalendar {
     _service = null;
 
     // Clear holiday cache to ensure new custom holidays are picked up
-    cache.clearHolidayInfoCache();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
 
     // Update translation service language
     if (language != null) {
@@ -132,9 +134,7 @@ class MyanmarCalendar {
 
   /// Remove all custom holidays from the configuration
   static void clearCustomHolidays() {
-    CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: [],
-    );
+    CalendarConfig.global = CalendarConfig.global.copyWith(customHolidays: []);
     cache.clearHolidayInfoCache();
   }
 
