@@ -71,7 +71,7 @@ class MyanmarCalendarService {
   void _initializeServices() {
     _dateConverter = DateConverter(_config, cache: _cache);
     _astroCalculator = AstroCalculator(cache: _cache);
-    _holidayCalculator = HolidayCalculator(cache: _cache);
+    _holidayCalculator = HolidayCalculator(cache: _cache, config: _config);
   }
 
   void _setLanguage(Language? defaultLanguage) {

@@ -7,6 +7,7 @@ import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
+import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
@@ -74,6 +75,8 @@ class MyanmarCalendar {
   /// [calendarType] - Calendar system (0=British, 1=Gregorian, 2=Julian)
   /// [gregorianStart] - Julian Day Number of Gregorian calendar start
   /// [customHolidays] - List of custom holidays defined by the consumer
+  /// [disabledHolidays] - List of built-in holidays to disable globally
+  /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
   static void configure({
     Language? language,
     double? timezoneOffset,
@@ -81,6 +84,8 @@ class MyanmarCalendar {
     int? calendarType,
     int? gregorianStart,
     List<CustomHoliday>? customHolidays,
+    List<HolidayId>? disabledHolidays,
+    Map<int, List<HolidayId>>? disabledHolidaysByYear,
   }) {
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
@@ -90,6 +95,8 @@ class MyanmarCalendar {
       calendarType: calendarType,
       gregorianStart: gregorianStart,
       customHolidays: customHolidays,
+      disabledHolidays: disabledHolidays,
+      disabledHolidaysByYear: disabledHolidaysByYear,
     );
 
     // Reset service to pick up new configuration

@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
+import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
 
 /// Configuration class for the Myanmar Calendar
 class CalendarConfig {
@@ -10,6 +12,8 @@ class CalendarConfig {
     this.timezoneOffset = 6.5, // Myanmar Time UTC+6:30
     this.defaultLanguage = 'en',
     this.customHolidays = const [],
+    this.disabledHolidays = const [],
+    this.disabledHolidaysByYear = const {},
   });
 
   /// Create config with Myanmar Time (UTC+6:30)
@@ -64,6 +68,12 @@ class CalendarConfig {
   /// Custom holidays defined by the consumer
   final List<CustomHoliday> customHolidays;
 
+  /// List of built-in holidays to disable globally
+  final List<HolidayId> disabledHolidays;
+
+  /// Map of Western year to list of built-in holidays to disable for that specific year
+  final Map<int, List<HolidayId>> disabledHolidaysByYear;
+
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
@@ -81,6 +91,8 @@ class CalendarConfig {
     double? timezoneOffset,
     String? defaultLanguage,
     List<CustomHoliday>? customHolidays,
+    List<HolidayId>? disabledHolidays,
+    Map<int, List<HolidayId>>? disabledHolidaysByYear,
   }) {
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
@@ -89,11 +101,45 @@ class CalendarConfig {
       timezoneOffset: timezoneOffset ?? this.timezoneOffset,
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
       customHolidays: customHolidays ?? this.customHolidays,
+      disabledHolidays: disabledHolidays ?? this.disabledHolidays,
+      disabledHolidaysByYear:
+          disabledHolidaysByYear ?? this.disabledHolidaysByYear,
     );
   }
 
   @override
-  String toString() {
-    return 'CalendarConfig(sasanaYearType: $sasanaYearType, calendarType: $calendarType, gregorianStart: $gregorianStart, timezoneOffset: $timezoneOffset, defaultLanguage: $defaultLanguage, customHolidays: $customHolidays)';
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is CalendarConfig &&
+        other.sasanaYearType == sasanaYearType &&
+        other.calendarType == calendarType &&
+        other.gregorianStart == gregorianStart &&
+        other.timezoneOffset == timezoneOffset &&
+        other.defaultLanguage == defaultLanguage &&
+        const ListEquality<CustomHoliday>().equals(
+          other.customHolidays,
+          customHolidays,
+        ) &&
+        const ListEquality<HolidayId>().equals(
+          other.disabledHolidays,
+          disabledHolidays,
+        ) &&
+        const MapEquality<int, List<HolidayId>>().equals(
+          other.disabledHolidaysByYear,
+          disabledHolidaysByYear,
+        );
+  }
+
+  @override
+  int get hashCode {
+    return sasanaYearType.hashCode ^
+        calendarType.hashCode ^
+        gregorianStart.hashCode ^
+        timezoneOffset.hashCode ^
+        defaultLanguage.hashCode ^
+        const ListEquality<CustomHoliday>().hash(customHolidays) ^
+        const ListEquality<HolidayId>().hash(disabledHolidays) ^
+        const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear);
   }
 }

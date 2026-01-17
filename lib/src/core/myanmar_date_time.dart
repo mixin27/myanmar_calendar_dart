@@ -68,7 +68,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       julianDayNumber,
     );
   }
@@ -84,7 +84,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       westernDate.julianDayNumber,
     );
   }
@@ -100,7 +100,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       myanmarDate.julianDayNumber,
     );
   }
@@ -130,7 +130,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       jdn,
     );
   }
@@ -160,7 +160,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       jdn,
     );
   }
@@ -185,7 +185,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       jdn,
     );
   }
@@ -212,7 +212,7 @@ class MyanmarDateTime {
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
-      _sharedHolidayCalculator,
+      _getHolidayCalculator(cfg),
       jdn,
     );
   }
@@ -240,10 +240,9 @@ class MyanmarDateTime {
   ShanDate? _shanDate;
 
   static final Map<String, DateConverter> _converters = {};
+  static final Map<String, HolidayCalculator> _holidayCalculators = {};
+
   static final AstroCalculator _sharedAstroCalculator = AstroCalculator(
-    cache: CalendarCache.global(),
-  );
-  static final HolidayCalculator _sharedHolidayCalculator = HolidayCalculator(
     cache: CalendarCache.global(),
   );
 
@@ -253,6 +252,15 @@ class MyanmarDateTime {
     return _converters.putIfAbsent(
       key,
       () => DateConverter(config, cache: CalendarCache.global()),
+    );
+  }
+
+  /// Get or create a shared holiday calculator for the given config
+  static HolidayCalculator _getHolidayCalculator(CalendarConfig config) {
+    final key = config.hashCode.toString();
+    return _holidayCalculators.putIfAbsent(
+      key,
+      () => HolidayCalculator(cache: CalendarCache.global(), config: config),
     );
   }
 
