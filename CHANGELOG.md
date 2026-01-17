@@ -1,3 +1,7 @@
+## 1.1.4
+
+- Add support for flexible built-in holidays. Now you can disable specific built-in holidays for specific years.
+
 ## 1.1.3
 
 - Fixed custom holidays cache

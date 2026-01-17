@@ -247,6 +247,27 @@ MyanmarCalendar.addCustomHoliday(anotherHoliday);
 MyanmarCalendar.removeCustomHoliday(myBirthday);
 ```
 
+## Flexible Built-in Holidays
+
+Built-in holidays can be disabled globally or for specific years. This is useful when government declarations for official holidays change annually.
+
+```dart
+// Disable Independence Day globally
+MyanmarCalendar.configure(
+  disabledHolidays: [HolidayId.independenceDay],
+);
+
+// Disable multiple holidays for a specific year only
+MyanmarCalendar.configure(
+  disabledHolidaysByYear: {
+    2024: [HolidayId.newYearDay, HolidayId.independenceDay],
+  },
+);
+
+// Reset configuration to default
+MyanmarCalendar.reset();
+```
+
 ## AI Prompt Generation
 
 The package provides a specialized service to generate structured prompts for AI platforms (Gemini, ChatGPT, Claude) based on traditional Burmese astrological knowledge.
