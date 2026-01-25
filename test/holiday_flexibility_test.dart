@@ -98,5 +98,25 @@ void main() {
       expect(date.publicHolidays, isNot(contains('Independence')));
       expect(date.publicHolidays, contains('Extra'));
     });
+
+    test('should disable a holiday for a specific date only', () {
+      // April 17 is usually Myanmar New Year's Day.
+      // In 2026, April 17 is indeed Myanmar New Year's Day.
+      MyanmarCalendar.configure(
+        disabledHolidaysByDate: {
+          '2026-04-17': [HolidayId.myanmarNewYearDay],
+        },
+      );
+
+      final dateDisabled = MyanmarCalendar.fromWestern(2026, 4, 17);
+      expect(
+        dateDisabled.publicHolidays,
+        isNot(contains("Myanmar New Year's Day")),
+      );
+
+      // Check other year - same date
+      final dateOtherYear = MyanmarCalendar.fromWestern(2025, 4, 17);
+      expect(dateOtherYear.publicHolidays, contains("Myanmar New Year's Day"));
+    });
   });
 }

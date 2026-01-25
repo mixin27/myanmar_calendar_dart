@@ -77,6 +77,7 @@ class MyanmarCalendar {
   /// [customHolidays] - List of custom holidays defined by the consumer
   /// [disabledHolidays] - List of built-in holidays to disable globally
   /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
+  /// [disabledHolidaysByDate] - Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
   static void configure({
     Language? language,
     double? timezoneOffset,
@@ -86,6 +87,7 @@ class MyanmarCalendar {
     List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
+    Map<String, List<HolidayId>>? disabledHolidaysByDate,
   }) {
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
@@ -97,6 +99,7 @@ class MyanmarCalendar {
       customHolidays: customHolidays,
       disabledHolidays: disabledHolidays,
       disabledHolidaysByYear: disabledHolidaysByYear,
+      disabledHolidaysByDate: disabledHolidaysByDate,
     );
 
     // Reset service to pick up new configuration

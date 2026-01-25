@@ -1,3 +1,7 @@
+## 1.1.5
+
+- Add `disabledHolidaysByDate` config
+
 ## 1.1.4
 
 - Add support for flexible built-in holidays. Now you can disable specific built-in holidays for specific years.

@@ -264,6 +264,13 @@ MyanmarCalendar.configure(
   },
 );
 
+// Disable a holiday for a specific date only
+MyanmarCalendar.configure(
+  disabledHolidaysByDate: {
+    '2026-04-20': [HolidayId.holiday],
+  },
+);
+
 // Reset configuration to default
 MyanmarCalendar.reset();
 ```

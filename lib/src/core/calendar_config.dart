@@ -14,6 +14,7 @@ class CalendarConfig {
     this.customHolidays = const [],
     this.disabledHolidays = const [],
     this.disabledHolidaysByYear = const {},
+    this.disabledHolidaysByDate = const {},
   });
 
   /// Create config with Myanmar Time (UTC+6:30)
@@ -74,6 +75,9 @@ class CalendarConfig {
   /// Map of Western year to list of built-in holidays to disable for that specific year
   final Map<int, List<HolidayId>> disabledHolidaysByYear;
 
+  /// Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
+  final Map<String, List<HolidayId>> disabledHolidaysByDate;
+
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
@@ -93,6 +97,7 @@ class CalendarConfig {
     List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
+    Map<String, List<HolidayId>>? disabledHolidaysByDate,
   }) {
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
@@ -104,6 +109,8 @@ class CalendarConfig {
       disabledHolidays: disabledHolidays ?? this.disabledHolidays,
       disabledHolidaysByYear:
           disabledHolidaysByYear ?? this.disabledHolidaysByYear,
+      disabledHolidaysByDate:
+          disabledHolidaysByDate ?? this.disabledHolidaysByDate,
     );
   }
 
@@ -128,6 +135,10 @@ class CalendarConfig {
         const MapEquality<int, List<HolidayId>>().equals(
           other.disabledHolidaysByYear,
           disabledHolidaysByYear,
+        ) &&
+        const MapEquality<String, List<HolidayId>>().equals(
+          other.disabledHolidaysByDate,
+          disabledHolidaysByDate,
         );
   }
 
@@ -140,6 +151,9 @@ class CalendarConfig {
         defaultLanguage.hashCode ^
         const ListEquality<CustomHoliday>().hash(customHolidays) ^
         const ListEquality<HolidayId>().hash(disabledHolidays) ^
-        const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear);
+        const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear) ^
+        const MapEquality<String, List<HolidayId>>().hash(
+          disabledHolidaysByDate,
+        );
   }
 }

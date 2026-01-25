@@ -70,7 +70,11 @@ class HolidayCalculator {
         _config.disabledHolidays.map((e) => e.name).toList()..sort();
 
     // Include year-specific disabled holidays (only for the current year)
-    final westernYear = _jdnToWestern(date.julianDayNumber)['year']!;
+    final westernDate = _jdnToWestern(date.julianDayNumber);
+    final westernYear = westernDate['year']!;
+    final westernMonth = westernDate['month']!;
+    final westernDay = westernDate['day']!;
+
     final yearSpecificDisabled =
         _config.disabledHolidaysByYear[westernYear]
                   ?.map((e) => e.name)
@@ -78,9 +82,19 @@ class HolidayCalculator {
               []
           ..sort();
 
+    // Include date-specific disabled holidays
+    final dateSpecificKey =
+        '$westernYear-${westernMonth.toString().padLeft(2, '0')}-${westernDay.toString().padLeft(2, '0')}';
+    final dateSpecificDisabled =
+        _config.disabledHolidaysByDate[dateSpecificKey]
+                  ?.map((e) => e.name)
+                  .toList() ??
+              []
+          ..sort();
+
     final customHolidayIds = customHolidays.map((h) => h.id).toList()..sort();
 
-    return '$dateKey|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${customHolidayIds.join(',')}';
+    return '$dateKey|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayIds.join(',')}';
   }
 
   HolidayInfo _calculateHolidays(
@@ -97,12 +111,11 @@ class HolidayCalculator {
     // Convert to Western date for Gregorian-based holidays
     final westernJdn = date.julianDayNumber;
     final westernDate = _jdnToWestern(westernJdn);
-    final westernYear = westernDate['year']!;
 
     // Myanmar calendar based holidays
     _addMyanmarHolidays(
       date,
-      westernYear,
+      westernDate,
       publicHolidays,
       religiousHolidays,
       culturalHolidays,
@@ -130,7 +143,7 @@ class HolidayCalculator {
     // Myanmar anniversary days
     _addMyanmarAnniversaryDays(
       date,
-      westernDate['year']!,
+      westernDate,
       myanmarAnniversaryDays,
     );
 
@@ -161,12 +174,20 @@ class HolidayCalculator {
     );
   }
 
-  /// Check if a holiday is disabled globally or for a specific year
-  bool _isDisabled(HolidayId holidayId, int year) {
+  /// Check if a holiday is disabled globally, for a specific year, or date
+  bool _isDisabled(HolidayId holidayId, int year, [int? month, int? day]) {
     if (_config.disabledHolidays.contains(holidayId)) return true;
     final disabledInYear = _config.disabledHolidaysByYear[year];
     if (disabledInYear != null && disabledInYear.contains(holidayId)) {
       return true;
+    }
+    if (month != null && day != null) {
+      final dateKey =
+          '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+      final disabledOnDate = _config.disabledHolidaysByDate[dateKey];
+      if (disabledOnDate != null && disabledOnDate.contains(holidayId)) {
+        return true;
+      }
     }
     return false;
   }
@@ -174,22 +195,31 @@ class HolidayCalculator {
   /// Add Myanmar calendar based holidays
   void _addMyanmarHolidays(
     MyanmarDate date,
-    int westernYear,
+    Map<String, int> westernDate,
     List<String> publicHolidays,
     List<String> religiousHolidays,
     List<String> culturalHolidays,
   ) {
+    final westernYear = westernDate['year']!;
+    final westernMonth = westernDate['month']!;
+    final westernDay = westernDate['day']!;
+
     // Vesak Day (Buddha Day) - Kason full moon
     if (date.month == CalendarConstants.monthKason &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.buddha, westernYear)) {
+        !_isDisabled(HolidayId.buddha, westernYear, westernMonth, westernDay)) {
       religiousHolidays.add(TranslationService.translate('Buddha'));
     }
 
     // Start of Buddhist Lent - Waso full moon
     if (date.month == CalendarConstants.monthWaso &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.startOfBuddhistLent, westernYear)) {
+        !_isDisabled(
+          HolidayId.startOfBuddhistLent,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       religiousHolidays.add(
         TranslationService.translate('Start of Buddhist Lent'),
       );
@@ -198,12 +228,22 @@ class HolidayCalculator {
     // End of Buddhist Lent - Thadingyut full moon
     if (date.month == CalendarConstants.monthThadingyut &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon) {
-      if (!_isDisabled(HolidayId.endOfBuddhistLent, westernYear)) {
+      if (!_isDisabled(
+        HolidayId.endOfBuddhistLent,
+        westernYear,
+        westernMonth,
+        westernDay,
+      )) {
         religiousHolidays.add(
           TranslationService.translate('End of Buddhist Lent'),
         );
       }
-      if (!_isDisabled(HolidayId.holiday, westernYear)) {
+      if (!_isDisabled(
+        HolidayId.holiday,
+        westernYear,
+        westernMonth,
+        westernDay,
+      )) {
         publicHolidays.add(TranslationService.translate('Holiday'));
       }
     }
@@ -211,21 +251,36 @@ class HolidayCalculator {
     if (date.year >= 1379 &&
         date.month == CalendarConstants.monthThadingyut &&
         (date.day == 14 || date.day == 16) &&
-        !_isDisabled(HolidayId.holiday, westernYear)) {
+        !_isDisabled(
+          HolidayId.holiday,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       publicHolidays.add(TranslationService.translate('Holiday'));
     }
 
     // Tazaungdaing Festival - Tazaungmon full moon
     if (date.month == CalendarConstants.monthTazaungmon &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.tazaungdaing, westernYear)) {
+        !_isDisabled(
+          HolidayId.tazaungdaing,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       religiousHolidays.add(TranslationService.translate('Tazaungdaing'));
     }
 
     if (date.year >= 1379 &&
         date.month == CalendarConstants.monthTazaungmon &&
         date.day == 14 &&
-        !_isDisabled(HolidayId.holiday, westernYear)) {
+        !_isDisabled(
+          HolidayId.holiday,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       culturalHolidays.add(TranslationService.translate('Holiday'));
     }
 
@@ -234,14 +289,24 @@ class HolidayCalculator {
         date.month == CalendarConstants.monthTazaungmon &&
         date.moonPhase == CalendarConstants.moonPhaseWaning &&
         date.fortnightDay == 10 &&
-        !_isDisabled(HolidayId.nationalDay, westernYear)) {
+        !_isDisabled(
+          HolidayId.nationalDay,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       publicHolidays.add(TranslationService.translate('National Day'));
     }
 
     // Karen New Year - Pyatho 1
     if (date.month == CalendarConstants.monthPyatho &&
         date.day == 1 &&
-        !_isDisabled(HolidayId.karenNewYear, westernYear)) {
+        !_isDisabled(
+          HolidayId.karenNewYear,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       culturalHolidays.add(
         '${TranslationService.translate('Karen')} ${TranslationService.translate("New Year's")}',
       );
@@ -250,7 +315,12 @@ class HolidayCalculator {
     // Tabaung Pwe - Tabaung full moon
     if (date.month == CalendarConstants.monthTabaung &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.tabaungPwe, westernYear)) {
+        !_isDisabled(
+          HolidayId.tabaungPwe,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       culturalHolidays.add(
         '${TranslationService.translate('Tabaung')} ${TranslationService.translate('Pwe')}',
       );
@@ -260,20 +330,34 @@ class HolidayCalculator {
   /// Add Myanmar anniversary days
   void _addMyanmarAnniversaryDays(
     MyanmarDate date,
-    int westernYear,
+    Map<String, int> westernDate,
     List<String> items,
   ) {
+    final westernYear = westernDate['year']!;
+    final westernMonth = westernDate['month']!;
+    final westernDay = westernDate['day']!;
+
     // Mahathamaya Day - Nayon full moon
     if (date.month == CalendarConstants.monthNayon &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.mahathamaya, westernYear)) {
+        !_isDisabled(
+          HolidayId.mahathamaya,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(TranslationService.translate('Mahathamaya'));
     }
 
     // Garudhamma Day - Tawthalin full moon
     if (date.month == CalendarConstants.monthTawthalin &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.garudhamma, westernYear)) {
+        !_isDisabled(
+          HolidayId.garudhamma,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(TranslationService.translate('Garudhamma'));
     }
 
@@ -281,7 +365,12 @@ class HolidayCalculator {
     if (date.year >= 1360 &&
         date.month == CalendarConstants.monthPyatho &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.mothersDay, westernYear)) {
+        !_isDisabled(
+          HolidayId.mothersDay,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(TranslationService.translate('Mothers'));
     }
 
@@ -289,21 +378,36 @@ class HolidayCalculator {
     if (date.year >= 1370 &&
         date.month == CalendarConstants.monthTabaung &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.fathersDay, westernYear)) {
+        !_isDisabled(
+          HolidayId.fathersDay,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(TranslationService.translate('Fathers'));
     }
 
     // Metta Day - Wagaung full moon
     if (date.month == CalendarConstants.monthWagaung &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
-        !_isDisabled(HolidayId.mettaDay, westernYear)) {
+        !_isDisabled(
+          HolidayId.mettaDay,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(TranslationService.translate('Metta'));
     }
 
     // Taungpyone Pwe - Wagaung 10
     if (date.month == CalendarConstants.monthWagaung &&
         date.day == 10 &&
-        !_isDisabled(HolidayId.taungpyonePwe, westernYear)) {
+        !_isDisabled(
+          HolidayId.taungpyonePwe,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(
         '${TranslationService.translate('Taungpyone')} ${TranslationService.translate('Pwe')}',
       );
@@ -312,7 +416,12 @@ class HolidayCalculator {
     // Yadanagu Pwe - Wagaung 23
     if (date.month == CalendarConstants.monthWagaung &&
         date.day == 23 &&
-        !_isDisabled(HolidayId.yadanaguPwe, westernYear)) {
+        !_isDisabled(
+          HolidayId.yadanaguPwe,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(
         '${TranslationService.translate('Yadanagu')} ${TranslationService.translate('Pwe')}',
       );
@@ -322,7 +431,12 @@ class HolidayCalculator {
     if (date.year >= 1309 &&
         date.month == CalendarConstants.monthTabodwe &&
         date.day == 16 &&
-        !_isDisabled(HolidayId.monNationalDay, westernYear)) {
+        !_isDisabled(
+          HolidayId.monNationalDay,
+          westernYear,
+          westernMonth,
+          westernDay,
+        )) {
       items.add(
         '${TranslationService.translate('Mon')} ${TranslationService.translate('National')}',
       );
@@ -330,14 +444,24 @@ class HolidayCalculator {
 
     // Shan New Year & Authors' Day - Nadaw 1
     if (date.month == CalendarConstants.monthNadaw && date.day == 1) {
-      if (!_isDisabled(HolidayId.shanNewYear, westernYear)) {
+      if (!_isDisabled(
+        HolidayId.shanNewYear,
+        westernYear,
+        westernMonth,
+        westernDay,
+      )) {
         final shan = TranslationService.translate('Shan');
         final newYear = TranslationService.translate("New Year's");
         items.add('$shan $newYear');
       }
 
       if (date.year >= 1306 &&
-          !_isDisabled(HolidayId.authorsDay, westernYear)) {
+          !_isDisabled(
+            HolidayId.authorsDay,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         items.add(TranslationService.translate('Authors'));
       }
     }
@@ -356,74 +480,74 @@ class HolidayCalculator {
     if (year >= 1915 &&
         month == 2 &&
         day == 13 &&
-        !_isDisabled(HolidayId.aungSanBirthday, year)) {
+        !_isDisabled(HolidayId.aungSanBirthday, year, month, day)) {
       items.add(TranslationService.translate('G. Aung San BD'));
     }
 
     // Valentines Day
     if ((year >= 1969) &&
         (month == 2 && day == 14) &&
-        !_isDisabled(HolidayId.valentinesDay, year)) {
+        !_isDisabled(HolidayId.valentinesDay, year, month, day)) {
       items.add(TranslationService.translate('Valentines'));
     }
 
     // Earth Day
     if ((year >= 1970) &&
         (month == 4 && day == 22) &&
-        !_isDisabled(HolidayId.earthDay, year)) {
+        !_isDisabled(HolidayId.earthDay, year, month, day)) {
       items.add(TranslationService.translate('Earth'));
     }
 
     // April Fools'
     if ((year >= 1392) &&
         (month == 4 && day == 1) &&
-        !_isDisabled(HolidayId.aprilFoolsDay, year)) {
+        !_isDisabled(HolidayId.aprilFoolsDay, year, month, day)) {
       items.add(TranslationService.translate("April Fools'"));
     }
 
     // Red cross
     if ((year >= 1948) &&
         (month == 5 && day == 8) &&
-        !_isDisabled(HolidayId.redCrossDay, year)) {
+        !_isDisabled(HolidayId.redCrossDay, year, month, day)) {
       items.add(TranslationService.translate('Red Cross'));
     }
 
     // World Teachers'
     if ((year >= 1994) &&
         (month == 10 && day == 5) &&
-        !_isDisabled(HolidayId.worldTeachersDay, year)) {
+        !_isDisabled(HolidayId.worldTeachersDay, year, month, day)) {
       items.add(TranslationService.translate("World Teachers'"));
     }
 
     // UN Day
     if ((year >= 1947) &&
         (month == 10 && day == 24) &&
-        !_isDisabled(HolidayId.unitedNationsDay, year)) {
+        !_isDisabled(HolidayId.unitedNationsDay, year, month, day)) {
       items.add(TranslationService.translate('United Nations'));
     }
 
     // Halloween
     if ((year >= 1753) &&
         (month == 10 && day == 31) &&
-        !_isDisabled(HolidayId.halloween, year)) {
+        !_isDisabled(HolidayId.halloween, year, month, day)) {
       items.add(TranslationService.translate('Halloween'));
     }
 
     // Eid al-Fitr (approximate calculation)
     if (_isEidAlFitr(year, month, day) &&
-        !_isDisabled(HolidayId.eidAlFitr, year)) {
+        !_isDisabled(HolidayId.eidAlFitr, year, month, day)) {
       items.add(TranslationService.translate('Eid al-Fitr'));
     }
 
     // Eid al-Adha (approximate calculation)
     if (_isEidAlAdha(year, month, day) &&
-        !_isDisabled(HolidayId.eidAlAdha, year)) {
+        !_isDisabled(HolidayId.eidAlAdha, year, month, day)) {
       items.add(TranslationService.translate('Eid al-Adha'));
     }
 
     // Chinese New Year
     if (_isChineseNewYear(year, month, day) &&
-        !_isDisabled(HolidayId.chineseNewYear, year)) {
+        !_isDisabled(HolidayId.chineseNewYear, year, month, day)) {
       items.add(TranslationService.translate("Chinese New Year's"));
     }
   }
@@ -443,7 +567,7 @@ class HolidayCalculator {
     if (year >= 2018 &&
         month == 1 &&
         day == 1 &&
-        !_isDisabled(HolidayId.newYearDay, year)) {
+        !_isDisabled(HolidayId.newYearDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate("New Year's"));
     }
 
@@ -451,7 +575,7 @@ class HolidayCalculator {
     if (year >= 2018 &&
         month == 12 &&
         day == 31 &&
-        !_isDisabled(HolidayId.holiday, year)) {
+        !_isDisabled(HolidayId.holiday, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Holiday'));
     }
 
@@ -459,7 +583,7 @@ class HolidayCalculator {
     if (year >= 1948 &&
         month == 1 &&
         day == 4 &&
-        !_isDisabled(HolidayId.independenceDay, year)) {
+        !_isDisabled(HolidayId.independenceDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Independence'));
     }
 
@@ -467,7 +591,7 @@ class HolidayCalculator {
     if (year >= 1947 &&
         month == 2 &&
         day == 12 &&
-        !_isDisabled(HolidayId.unionDay, year)) {
+        !_isDisabled(HolidayId.unionDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Union'));
     }
 
@@ -475,7 +599,7 @@ class HolidayCalculator {
     if (year >= 1958 &&
         month == 3 &&
         day == 2 &&
-        !_isDisabled(HolidayId.peasantsDay, year)) {
+        !_isDisabled(HolidayId.peasantsDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Peasants'));
     }
 
@@ -483,7 +607,7 @@ class HolidayCalculator {
     if (year >= 1945 &&
         month == 3 &&
         day == 27 &&
-        !_isDisabled(HolidayId.resistanceDay, year)) {
+        !_isDisabled(HolidayId.resistanceDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Resistance'));
     }
 
@@ -491,7 +615,7 @@ class HolidayCalculator {
     if (year >= 1923 &&
         month == 5 &&
         day == 1 &&
-        !_isDisabled(HolidayId.labourDay, year)) {
+        !_isDisabled(HolidayId.labourDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate('Labour'));
     }
 
@@ -499,7 +623,7 @@ class HolidayCalculator {
     if (year >= 1947 &&
         month == 7 &&
         day == 19 &&
-        !_isDisabled(HolidayId.martyrsDay, year)) {
+        !_isDisabled(HolidayId.martyrsDay, year, month, day)) {
       publicHolidays.add(TranslationService.translate("Martyrs'"));
     }
 
@@ -507,7 +631,7 @@ class HolidayCalculator {
     if (year >= 1752 &&
         month == 12 &&
         day == 25 &&
-        !_isDisabled(HolidayId.christmasDay, year)) {
+        !_isDisabled(HolidayId.christmasDay, year, month, day)) {
       religiousHolidays.add(TranslationService.translate('Christmas'));
     }
 
@@ -515,10 +639,11 @@ class HolidayCalculator {
     final easterJdn = _calculateEaster(year);
     final currentJdn = _westernToJdn(year, month, day);
 
-    if (currentJdn == easterJdn && !_isDisabled(HolidayId.easterSunday, year)) {
+    if (currentJdn == easterJdn &&
+        !_isDisabled(HolidayId.easterSunday, year, month, day)) {
       religiousHolidays.add(TranslationService.translate('Easter'));
     } else if (currentJdn == (easterJdn - 2) &&
-        !_isDisabled(HolidayId.goodFriday, year)) {
+        !_isDisabled(HolidayId.goodFriday, year, month, day)) {
       religiousHolidays.add(TranslationService.translate('Good Friday'));
     }
   }
@@ -551,17 +676,29 @@ class HolidayCalculator {
       final currentJdn = date.julianDayNumber.round();
 
       final thinGyan = TranslationService.translate('Thingyan');
+      final westernMonth = westernDate['month']!;
+      final westernDay = westernDate['day']!;
 
       // Myanmar New Year's Day
       if (currentJdn == newYearJdn &&
-          !_isDisabled(HolidayId.myanmarNewYearDay, westernYear)) {
+          !_isDisabled(
+            HolidayId.myanmarNewYearDay,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         publicHolidays.add(
           TranslationService.translate("Myanmar New Year's Day"),
         );
       }
       // Thingyan Atat
       else if (currentJdn == atatJdn &&
-          !_isDisabled(HolidayId.thingyanAtat, westernYear)) {
+          !_isDisabled(
+            HolidayId.thingyanAtat,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         culturalHolidays.add(
           '$thinGyan ${TranslationService.translate('Atat')}',
         );
@@ -569,28 +706,48 @@ class HolidayCalculator {
       // Thingyan Akyat (water throwing days)
       else if (currentJdn > akyaJdn &&
           currentJdn < atatJdn &&
-          !_isDisabled(HolidayId.thingyanAkyat, westernYear)) {
+          !_isDisabled(
+            HolidayId.thingyanAkyat,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         culturalHolidays.add(
           '$thinGyan ${TranslationService.translate('Akyat')}',
         );
       }
       // Thingyan Akya
       else if (currentJdn == akyaJdn &&
-          !_isDisabled(HolidayId.thingyanAkya, westernYear)) {
+          !_isDisabled(
+            HolidayId.thingyanAkya,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         culturalHolidays.add(
           '$thinGyan ${TranslationService.translate('Akya')}',
         );
       }
       // Thingyan Akyo
       else if (currentJdn == akyoJdn &&
-          !_isDisabled(HolidayId.thingyanAkyo, westernYear)) {
+          !_isDisabled(
+            HolidayId.thingyanAkyo,
+            westernYear,
+            westernMonth,
+            westernDay,
+          )) {
         culturalHolidays.add(
           '$thinGyan ${TranslationService.translate('Akyo')}',
         );
       }
 
       // Additional holiday periods for specific years
-      if (!_isDisabled(HolidayId.holiday, westernYear)) {
+      if (!_isDisabled(
+        HolidayId.holiday,
+        westernYear,
+        westernMonth,
+        westernDay,
+      )) {
         if ((date.year + monthType) >= 1369 && (date.year + monthType) < 1379) {
           if (currentJdn == (akyaJdn - 2) ||
               (currentJdn >= (atatJdn + 2) && currentJdn <= (akyaJdn + 7))) {
@@ -620,7 +777,8 @@ class HolidayCalculator {
     final day = westernDate['day']!;
 
     // Diwali (approximate calculation)
-    if (_isDiwali(year, month, day) && !_isDisabled(HolidayId.diwali, year)) {
+    if (_isDiwali(year, month, day) &&
+        !_isDisabled(HolidayId.diwali, year, month, day)) {
       otherHolidays.add(TranslationService.translate('Diwali'));
     }
   }
