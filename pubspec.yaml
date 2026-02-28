@@ -6,7 +6,7 @@ repository: https://github.com/mixin27/myanmar_calendar_dart
 issue_tracker: https://github.com/mixin27/myanmar_calendar_dart/issues
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.11.0
 
 dependencies:
   collection: ^1.19.1
