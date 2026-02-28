@@ -58,11 +58,13 @@ export 'src/models/custom_holiday.dart';
 export 'src/models/holiday_id.dart';
 export 'src/models/holiday_info.dart';
 export 'src/models/myanmar_date.dart';
+export 'src/models/myanmar_year_info.dart';
 export 'src/models/shan_date.dart';
 export 'src/models/validation_result.dart';
 export 'src/models/western_date.dart';
 export 'src/models/western_holiday_provider.dart';
 // Public API
+export 'src/myanmar_calendar_client.dart';
 export 'src/myanmar_calendar_dart.dart';
 // Services
 export 'src/services/ai_prompt_service.dart';

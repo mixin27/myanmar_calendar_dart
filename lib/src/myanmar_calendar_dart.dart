@@ -13,6 +13,7 @@ import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
+import 'package:myanmar_calendar_dart/src/myanmar_calendar_client.dart';
 import 'package:myanmar_calendar_dart/src/services/ai_prompt_service.dart';
 import 'package:myanmar_calendar_dart/src/services/chronicle_service.dart';
 import 'package:myanmar_calendar_dart/src/services/myanmar_calendar_service.dart';
@@ -217,6 +218,21 @@ class MyanmarCalendar {
 
   /// Get global cache instance
   static CalendarCache get cache => CalendarCache.global();
+
+  /// Create an instance-first client with isolated runtime state.
+  ///
+  /// This is recommended for server-side, multi-tenant, and test-heavy usage.
+  static MyanmarCalendarClient createClient({
+    CalendarConfig? config,
+    CacheConfig cacheConfig = const CacheConfig(),
+    bool useGlobalCache = false,
+  }) {
+    return MyanmarCalendarClient(
+      config: config ?? CalendarConfig.global,
+      cacheConfig: cacheConfig,
+      useGlobalCache: useGlobalCache,
+    );
+  }
 
   /// Clear all caches
   static void clearCache() {

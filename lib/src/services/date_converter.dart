@@ -17,6 +17,7 @@ library;
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
+import 'package:myanmar_calendar_dart/src/models/myanmar_year_info.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_constants.dart';
 import 'package:myanmar_calendar_dart/src/utils/myanmar_year_constants.dart';
@@ -652,16 +653,22 @@ class DateConverter {
     return yearInfo['tg1']!;
   }
 
-  /// Get complete year information
-  Map<String, dynamic> getYearInfo(int myanmarYear) {
+  /// Get complete typed year information.
+  MyanmarYearInfo getMyanmarYearInfo(int myanmarYear) {
     final yearInfo = _getMyanmarYearInfo(myanmarYear);
 
-    return {
-      'year': myanmarYear,
-      'yearType': yearInfo['myt']!.toInt(),
-      'isWatat': yearInfo['myt']! > 0,
-      'firstDayJdn': yearInfo['tg1']!.toInt(),
-      'fullMoonJdn': yearInfo['fm']!.toInt(),
-    };
+    return MyanmarYearInfo(
+      year: myanmarYear,
+      yearType: yearInfo['myt']!.toInt(),
+      isWatat: yearInfo['myt']! > 0,
+      firstDayJdn: yearInfo['tg1']!.toInt(),
+      fullMoonJdn: yearInfo['fm']!.toInt(),
+    );
+  }
+
+  /// Get complete year information as a map.
+  @Deprecated('Use getMyanmarYearInfo for typed access.')
+  Map<String, dynamic> getYearInfo(int myanmarYear) {
+    return getMyanmarYearInfo(myanmarYear).toMap();
   }
 }

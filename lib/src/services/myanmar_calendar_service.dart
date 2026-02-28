@@ -5,6 +5,7 @@ import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
+import 'package:myanmar_calendar_dart/src/models/myanmar_year_info.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
@@ -299,8 +300,8 @@ class MyanmarCalendarService {
     final dates = <MyanmarDate>[];
 
     // get first day of myanmar month
-    final yearInfo = _dateConverter.getYearInfo(year);
-    final yearType = yearInfo['yearType'];
+    final yearInfo = _dateConverter.getMyanmarYearInfo(year);
+    final yearType = yearInfo.yearType;
 
     // We don't use Late Kason, Just Kason
     if (month == 14 && yearType == 0) {
@@ -369,8 +370,32 @@ class MyanmarCalendarService {
   CalendarCacheStatistics getTypedCacheStatistics() =>
       _cache.getTypedStatistics();
 
+  /// Reset cache statistics.
+  void resetCacheStatistics() => _cache.resetStatistics();
+
+  /// Warm up complete-date cache entries for a date range.
+  void warmUpCache({
+    DateTime? startDate,
+    DateTime? endDate,
+    Language? language,
+  }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
+    _cache.warmUp(
+      startDate: startDate,
+      endDate: endDate,
+      resolveCompleteDate: (dateTime) {
+        return getCompleteDate(dateTime, language: resolvedLanguage);
+      },
+    );
+  }
+
   /// Clear cache
   void clearCache() => _cache.clearAll();
+
+  /// Get typed Myanmar year metadata.
+  MyanmarYearInfo getMyanmarYearInfo(int myanmarYear) {
+    return _dateConverter.getMyanmarYearInfo(myanmarYear);
+  }
 
   /// Validate Myanmar date
   ValidationResult validateMyanmarDate(int year, int month, int day) {

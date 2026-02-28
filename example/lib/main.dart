@@ -133,9 +133,6 @@ enum _CacheProfile {
 }
 
 void _runExample(_ExampleOptions options) {
-  MyanmarCalendar.reset();
-  MyanmarCalendar.configureCache(_cacheConfigFor(options.cacheProfile));
-
   final customHolidayRules = <CustomHoliday>[
     CustomHoliday.westernDate(
       id: 'example_runtime_day',
@@ -162,10 +159,13 @@ void _runExample(_ExampleOptions options) {
     ),
   ];
 
-  MyanmarCalendar.configure(
-    language: options.language,
-    timezoneOffset: options.timezoneOffset,
-    customHolidayRules: customHolidayRules,
+  final client = MyanmarCalendarClient(
+    config: CalendarConfig(
+      defaultLanguage: options.language.code,
+      timezoneOffset: options.timezoneOffset,
+      customHolidays: customHolidayRules,
+    ),
+    cacheConfig: _cacheConfigFor(options.cacheProfile),
   );
 
   final dateTime = DateTime(
@@ -174,13 +174,13 @@ void _runExample(_ExampleOptions options) {
     options.targetDate.day,
     12,
   );
-  final myanmarDateTime = MyanmarCalendar.fromDateTime(dateTime);
-  final completeDefault = MyanmarCalendar.getCompleteDate(dateTime);
-  final completeEnglish = MyanmarCalendar.getCompleteDate(
+  final myanmarDateTime = client.fromDateTime(dateTime);
+  final completeDefault = client.getCompleteDate(dateTime);
+  final completeEnglish = client.getCompleteDate(
     dateTime,
     language: Language.english,
   );
-  final completeMyanmar = MyanmarCalendar.getCompleteDate(
+  final completeMyanmar = client.getCompleteDate(
     dateTime,
     language: Language.myanmar,
   );
@@ -220,26 +220,26 @@ void _runExample(_ExampleOptions options) {
   print('');
 
   _printHeader('Month Transition Demo');
-  final previousMonth = MyanmarCalendar.addMonths(myanmarDateTime, -1);
-  final nextMonth = MyanmarCalendar.addMonths(myanmarDateTime, 1);
+  final previousMonth = client.addMonths(myanmarDateTime, -1);
+  final nextMonth = client.addMonths(myanmarDateTime, 1);
   print('Previous Month: ${previousMonth.formatMyanmar('&y &M &d')}');
   print('Current Date  : ${myanmarDateTime.formatMyanmar('&y &M &d')}');
   print('Next Month    : ${nextMonth.formatMyanmar('&y &M &d')}');
   print('');
 
   _printHeader('Cache Demo');
-  MyanmarCalendar.resetCacheStatistics();
+  client.resetCacheStatistics();
   for (var i = 0; i < 5; i++) {
-    MyanmarCalendar.getCompleteDate(dateTime, language: options.language);
+    client.getCompleteDate(dateTime, language: options.language);
   }
   for (var i = 0; i < 3; i++) {
-    MyanmarCalendar.getCompleteDate(
+    client.getCompleteDate(
       dateTime.add(Duration(days: i)),
       language: options.language,
     );
   }
 
-  final typedStats = MyanmarCalendar.getTypedCacheStatistics();
+  final typedStats = client.getTypedCacheStatistics();
   print('Requests: ${typedStats.totalRequests}');
   print('Hits    : ${typedStats.hits}');
   print('Misses  : ${typedStats.misses}');
@@ -252,8 +252,8 @@ void _runExample(_ExampleOptions options) {
 
   if (options.includeChronicle) {
     _printHeader('Chronicle Snapshot');
-    final entries = MyanmarCalendar.getChronicleFor(dateTime);
-    final dynasty = MyanmarCalendar.getDynastyFor(dateTime);
+    final entries = client.getChronicleFor(dateTime);
+    final dynasty = client.getDynastyFor(dateTime);
     print('Entries On Date: ${entries.length}');
     if (entries.isNotEmpty) {
       print(

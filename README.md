@@ -83,6 +83,22 @@ final astro = MyanmarCalendar.getAstroInfo(date.myanmarDate);
 final holidays = MyanmarCalendar.getHolidayInfo(date.myanmarDate);
 ```
 
+### Instance-first client (recommended for isolation)
+
+```dart
+final client = MyanmarCalendar.createClient(
+  config: const CalendarConfig(
+    defaultLanguage: 'en',
+    timezoneOffset: 6.5,
+  ),
+  cacheConfig: const CacheConfig.memoryEfficient(),
+);
+
+final complete = client.getCompleteDate(DateTime(2024, 1, 4));
+final yearInfo = client.getMyanmarYearInfo(1385); // MyanmarYearInfo (typed)
+print(yearInfo.yearType);
+```
+
 ### Formatting
 
 ```dart
