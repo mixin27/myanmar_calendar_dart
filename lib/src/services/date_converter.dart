@@ -665,5 +665,4 @@ class DateConverter {
       fullMoonJdn: yearInfo['fm']!.toInt(),
     );
   }
-
 }
