@@ -2,7 +2,6 @@ import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/core/myanmar_date_time.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
-import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
@@ -115,11 +114,6 @@ class MyanmarCalendar {
     cache
       ..clearHolidayInfoCache()
       ..clearCompleteDateCache();
-
-    // Update translation service language
-    if (language != null) {
-      TranslationService.setLanguage(language);
-    }
   }
 
   /// Add a custom holiday to the configuration
@@ -205,7 +199,7 @@ class MyanmarCalendar {
     cache.warmUp(
       startDate: startDate,
       endDate: endDate,
-      service: _serviceInstance,
+      resolveCompleteDate: _serviceInstance.getCompleteDate,
     );
   }
 
@@ -660,8 +654,12 @@ class MyanmarCalendar {
   /// MyanmarCalendar.setLanguage(Language.myanmar);
   /// ```
   static void setLanguage(Language language) {
-    _serviceInstance.setLanguage(language);
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      defaultLanguage: language.code,
+    );
+    _service?.setLanguage(language);
     _chronicles = null;
+    MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
       ..clearCompleteDateCache();
@@ -795,7 +793,6 @@ class MyanmarCalendar {
     _service = null;
     MyanmarDateTime.clearSharedInstances();
     cache.clearAll();
-    TranslationService.setLanguage(Language.english);
   }
 
   /// Get chronicles for [DateTime]

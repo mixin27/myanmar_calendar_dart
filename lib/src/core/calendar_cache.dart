@@ -8,6 +8,9 @@ import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 
+/// Typed callback contract used to warm up complete-date cache entries.
+typedef CompleteDateResolver = CompleteDate Function(DateTime dateTime);
+
 /// Cache configuration options
 class CacheConfig {
   /// Create a new [CacheConfig] instance
@@ -404,7 +407,7 @@ class CalendarCache {
   }
 
   /// Get cached AstroInfo
-  AstroInfo? getAstroInfo(dynamic myanmarDate, {String namespace = ''}) {
+  AstroInfo? getAstroInfo(MyanmarDate myanmarDate, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
@@ -424,7 +427,7 @@ class CalendarCache {
 
   /// Cache AstroInfo
   void putAstroInfo(
-    dynamic myanmarDate,
+    MyanmarDate myanmarDate,
     AstroInfo astroInfo, {
     String namespace = '',
   }) {
@@ -434,7 +437,10 @@ class CalendarCache {
   }
 
   /// Get cached HolidayInfo
-  HolidayInfo? getHolidayInfo(dynamic myanmarDate, {String namespace = ''}) {
+  HolidayInfo? getHolidayInfo(
+    MyanmarDate myanmarDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
@@ -465,7 +471,7 @@ class CalendarCache {
 
   /// Cache HolidayInfo
   void putHolidayInfo(
-    dynamic myanmarDate,
+    MyanmarDate myanmarDate,
     HolidayInfo holidayInfo, {
     String namespace = '',
   }) {
@@ -484,10 +490,7 @@ class CalendarCache {
     _holidayInfoCache.put(_namespaceKey(key, namespace), holidayInfo);
   }
 
-  String _generateMyanmarDateKey(dynamic myanmarDate) {
-    if (myanmarDate is Map) {
-      return '${myanmarDate['year']}-${myanmarDate['month']}-${myanmarDate['day']}';
-    }
+  String _generateMyanmarDateKey(MyanmarDate myanmarDate) {
     return '${myanmarDate.year}-${myanmarDate.month}-${myanmarDate.day}';
   }
 
@@ -547,7 +550,7 @@ class CalendarCache {
 
   /// Warm up cache with common dates
   void warmUp({
-    required dynamic service,
+    required CompleteDateResolver resolveCompleteDate,
     DateTime? startDate,
     DateTime? endDate,
   }) {
@@ -559,7 +562,7 @@ class CalendarCache {
 
     var currentDate = start;
     while (currentDate.isBefore(end) || currentDate.isAtSameMomentAs(end)) {
-      service.getCompleteDate(currentDate);
+      resolveCompleteDate(currentDate);
       currentDate = currentDate.add(const Duration(days: 1));
     }
   }

@@ -130,11 +130,10 @@ class CalendarConfig {
         })
         .join('|');
 
-    final customHolidayKey = customHolidays
-        .map((holiday) {
-          return '${holiday.id}:${holiday.name}:${holiday.type.index}:${identityHashCode(holiday.predicate)}';
-        })
-        .join('|');
+    final customHolidayKey = customHolidays.map((holiday) {
+      return '${holiday.cacheFingerprint}:${holiday.name}:${holiday.type.index}';
+    }).toList()..sort();
+    final customHolidayFingerprint = customHolidayKey.join('|');
 
     return 'sy:$sasanaYearType'
         '|ct:$calendarType'
@@ -144,8 +143,8 @@ class CalendarConfig {
         '|dg:${globalDisabled.join(',')}'
         '|dy:$yearSpecificKey'
         '|dd:$dateSpecificKey'
-        '|ch:$customHolidayKey'
-        '|whp:${westernHolidayProvider.runtimeType}:${identityHashCode(westernHolidayProvider)}';
+        '|ch:$customHolidayFingerprint'
+        '|whp:${westernHolidayProvider.cacheKey}';
   }
 
   /// Copy with new values
@@ -204,7 +203,8 @@ class CalendarConfig {
           other.disabledHolidaysByDate,
           disabledHolidaysByDate,
         ) &&
-        identical(other.westernHolidayProvider, westernHolidayProvider);
+        other.westernHolidayProvider.cacheKey ==
+            westernHolidayProvider.cacheKey;
   }
 
   @override
@@ -220,6 +220,6 @@ class CalendarConfig {
         const MapEquality<String, List<HolidayId>>().hash(
           disabledHolidaysByDate,
         ) ^
-        identityHashCode(westernHolidayProvider);
+        westernHolidayProvider.cacheKey.hashCode;
   }
 }

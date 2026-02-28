@@ -1,7 +1,6 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
-import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
@@ -45,9 +44,13 @@ class MyanmarCalendarService {
        _cache = CalendarCache.independent(
          config: cacheConfig ?? const CacheConfig(),
        ),
-       _formatService = FormatService() {
+       _formatService = FormatService(),
+       _currentLanguage =
+           defaultLanguage ??
+           Language.fromCode(
+             (config ?? CalendarConfig.global).defaultLanguage,
+           ) {
     _initializeServices();
-    _setLanguage(defaultLanguage);
   }
 
   /// Create service that uses the global shared cache
@@ -58,9 +61,13 @@ class MyanmarCalendarService {
   }) : _config = config ?? CalendarConfig.global,
        _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.global(), // Use global cache
-       _formatService = FormatService() {
+       _formatService = FormatService(),
+       _currentLanguage =
+           defaultLanguage ??
+           Language.fromCode(
+             (config ?? CalendarConfig.global).defaultLanguage,
+           ) {
     _initializeServices();
-    _setLanguage(defaultLanguage);
   }
 
   final CalendarConfig _config;
@@ -70,6 +77,7 @@ class MyanmarCalendarService {
   late final AstroCalculator _astroCalculator;
   late final HolidayCalculator _holidayCalculator;
   final FormatService _formatService;
+  Language _currentLanguage;
 
   void _initializeServices() {
     _dateConverter = DateConverter(
@@ -79,12 +87,6 @@ class MyanmarCalendarService {
     );
     _astroCalculator = AstroCalculator(cache: _cache);
     _holidayCalculator = HolidayCalculator(cache: _cache, config: _config);
-  }
-
-  void _setLanguage(Language? defaultLanguage) {
-    if (defaultLanguage != null) {
-      TranslationService.setLanguage(defaultLanguage);
-    }
   }
 
   /// Get calendar configuration
@@ -193,6 +195,7 @@ class MyanmarCalendarService {
     return _holidayCalculator.getHolidays(
       date,
       customHolidays: _config.customHolidays,
+      language: _currentLanguage,
     );
   }
 
@@ -205,7 +208,7 @@ class MyanmarCalendarService {
     return _formatService.formatMyanmarDate(
       date,
       pattern: pattern,
-      language: language,
+      language: language ?? _currentLanguage,
     );
   }
 
@@ -218,14 +221,14 @@ class MyanmarCalendarService {
     return _formatService.formatWesternDate(
       date,
       pattern: pattern,
-      language: language,
+      language: language ?? _currentLanguage,
     );
   }
 
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
   CompleteDate getCompleteDate(DateTime dateTime) {
     final completeDateNamespace =
-        'complete_date|$_cacheNamespace|lang:${TranslationService.currentLanguage.code}';
+        'complete_date|$_cacheNamespace|lang:${_currentLanguage.code}';
 
     // Try to get from cache
     final cached = _cache.getCompleteDate(
@@ -247,6 +250,7 @@ class MyanmarCalendarService {
     final holidayInfo = _holidayCalculator.getHolidays(
       myanmarDate,
       customHolidays: _config.customHolidays,
+      language: _currentLanguage,
     );
 
     final completeDate = CompleteDate(
@@ -334,12 +338,13 @@ class MyanmarCalendarService {
   }
 
   /// Set language for the service
+  // ignore: use_setters_to_change_properties
   void setLanguage(Language language) {
-    TranslationService.setLanguage(language);
+    _currentLanguage = language;
   }
 
   /// Get current language
-  Language get currentLanguage => TranslationService.currentLanguage;
+  Language get currentLanguage => _currentLanguage;
 
   /// Get cache statistics
   Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();

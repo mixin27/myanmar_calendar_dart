@@ -35,6 +35,12 @@ class WesternHolidayProvider {
   /// Creates a [WesternHolidayProvider].
   const WesternHolidayProvider();
 
+  /// Stable cache key for this provider configuration.
+  ///
+  /// Custom providers should override this when underlying rule data changes
+  /// over time while reusing the same class name.
+  String get cacheKey => 'provider_type_${runtimeType.hashCode}';
+
   /// Returns true when [holidayId] matches [year]-[month]-[day].
   bool matches(HolidayId holidayId, int year, int month, int day) => false;
 }
@@ -55,6 +61,54 @@ class TableWesternHolidayProvider extends WesternHolidayProvider {
 
   /// Multi day rules by holiday and year.
   final Map<HolidayId, Map<int, List<WesternHolidayDate>>> multiDayRules;
+
+  @override
+  String get cacheKey {
+    final singleHolidayEntries = singleDayRules.entries.toList()
+      ..sort((a, b) => a.key.name.compareTo(b.key.name));
+    final singleKey = singleHolidayEntries
+        .map((holidayEntry) {
+          final yearlyEntries = holidayEntry.value.entries.toList()
+            ..sort((a, b) => a.key.compareTo(b.key));
+          final dates = yearlyEntries
+              .map(
+                (entry) =>
+                    '${entry.key}-${entry.value.month.toString().padLeft(2, '0')}-${entry.value.day.toString().padLeft(2, '0')}',
+              )
+              .join('.');
+          return '${holidayEntry.key.name}:$dates';
+        })
+        .join('|');
+
+    final multiHolidayEntries = multiDayRules.entries.toList()
+      ..sort((a, b) => a.key.name.compareTo(b.key.name));
+    final multiKey = multiHolidayEntries
+        .map((holidayEntry) {
+          final yearlyEntries = holidayEntry.value.entries.toList()
+            ..sort((a, b) => a.key.compareTo(b.key));
+          final yearChunks = yearlyEntries
+              .map((entry) {
+                final sortedDates = [...entry.value]
+                  ..sort((a, b) {
+                    final monthCompare = a.month.compareTo(b.month);
+                    if (monthCompare != 0) return monthCompare;
+                    return a.day.compareTo(b.day);
+                  });
+                final dates = sortedDates
+                    .map(
+                      (date) =>
+                          '${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}',
+                    )
+                    .join(',');
+                return '${entry.key}:$dates';
+              })
+              .join('.');
+          return '${holidayEntry.key.name}:$yearChunks';
+        })
+        .join('|');
+
+    return 'table:s[$singleKey]:m[$multiKey]';
+  }
 
   @override
   bool matches(HolidayId holidayId, int year, int month, int day) {
@@ -90,6 +144,9 @@ class DefaultWesternHolidayProvider extends TableWesternHolidayProvider {
         singleDayRules: _singleDayRules,
         multiDayRules: _multiDayRules,
       );
+
+  @override
+  String get cacheKey => 'default_western_holiday_provider:v1';
 
   static const Map<HolidayId, Map<int, WesternHolidayDate>> _singleDayRules = {
     HolidayId.diwali: _diwaliDates,

@@ -78,6 +78,72 @@ void main() {
       cache.clearAll();
       expect(cache.getShanDate(keyJdn), isNull);
     });
+
+    test('cache namespace is stable for equivalent table providers', () {
+      // Intentionally non-const to ensure we compare two separately created instances.
+      // ignore: prefer_const_constructors
+      final providerA = TableWesternHolidayProvider(
+        singleDayRules: {
+          HolidayId.diwali: {
+            2045: const WesternHolidayDate(month: 11, day: 2),
+          },
+        },
+      );
+
+      // Intentionally non-const to ensure we compare two separately created instances.
+      // ignore: prefer_const_constructors
+      final providerB = TableWesternHolidayProvider(
+        singleDayRules: {
+          HolidayId.diwali: {
+            2045: const WesternHolidayDate(month: 11, day: 2),
+          },
+        },
+      );
+
+      final configA = CalendarConfig(westernHolidayProvider: providerA);
+      final configB = CalendarConfig(westernHolidayProvider: providerB);
+
+      expect(configA.cacheNamespace, equals(configB.cacheNamespace));
+    });
+
+    test('custom holiday namespace uses stable cache fingerprint', () {
+      final holidayA = CustomHoliday(
+        id: 'team_day',
+        name: 'Team Day',
+        type: HolidayType.cultural,
+        cacheVersion: 1,
+        predicate: (myanmarDate, westernDate) => westernDate.month == 7,
+      );
+
+      final holidayB = CustomHoliday(
+        id: 'team_day',
+        name: 'Team Day',
+        type: HolidayType.cultural,
+        cacheVersion: 1,
+        predicate: (myanmarDate, westernDate) => westernDate.day == 27,
+      );
+
+      final holidayC = CustomHoliday(
+        id: 'team_day',
+        name: 'Team Day',
+        type: HolidayType.cultural,
+        cacheVersion: 2,
+        predicate: (myanmarDate, westernDate) => westernDate.day == 27,
+      );
+
+      final namespaceA = CalendarConfig(
+        customHolidays: [holidayA],
+      ).cacheNamespace;
+      final namespaceB = CalendarConfig(
+        customHolidays: [holidayB],
+      ).cacheNamespace;
+      final namespaceC = CalendarConfig(
+        customHolidays: [holidayC],
+      ).cacheNamespace;
+
+      expect(namespaceA, equals(namespaceB));
+      expect(namespaceA, isNot(equals(namespaceC)));
+    });
   });
 
   group('Model Immutability Improvements', () {

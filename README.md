@@ -105,6 +105,7 @@ final myHoliday = CustomHoliday(
   id: 'team_day',
   name: 'Team Day',
   type: HolidayType.cultural,
+  cacheVersion: 1,
   predicate: (myanmarDate, westernDate) {
     return westernDate.month == 7 && westernDate.day == 27;
   },
@@ -112,6 +113,9 @@ final myHoliday = CustomHoliday(
 
 MyanmarCalendar.configure(customHolidays: [myHoliday]);
 ```
+
+When you change predicate logic but keep the same holiday ID, increment
+`cacheVersion` so cached holiday results are invalidated deterministically.
 
 ### Disable built-in holidays
 
@@ -160,6 +164,26 @@ MyanmarCalendar.configure(
 );
 ```
 
+For custom provider classes, override `cacheKey` with a stable value that
+changes when the provider's rule table changes:
+
+```dart
+class MyHolidayProvider extends WesternHolidayProvider {
+  const MyHolidayProvider({required this.version});
+
+  final int version;
+
+  @override
+  String get cacheKey => 'my_holiday_provider:v$version';
+
+  @override
+  bool matches(HolidayId holidayId, int year, int month, int day) {
+    // Implement your lookup logic
+    return false;
+  }
+}
+```
+
 ## Caching
 
 Caching is enabled by default to improve repeated conversion and lookup paths.
@@ -194,6 +218,8 @@ print(stats);
 
 - Cache entries are isolated by configuration fingerprint to avoid cross-config collisions.
 - Holiday and complete-date cache entries are language-aware.
+- Custom holiday cache keys are based on stable `cacheKey/cacheVersion` values.
+- Western holiday provider cache keys use `westernHolidayProvider.cacheKey`.
 - If your workload is mostly one-off conversions, disabling cache is reasonable.
 
 ## Localization

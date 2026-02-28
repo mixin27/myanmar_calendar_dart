@@ -408,6 +408,7 @@ class MyanmarDateTime {
     _holidayInfo ??= _holidayCalculator.getHolidays(
       myanmarDate,
       customHolidays: config.customHolidays,
+      language: Language.fromCode(config.defaultLanguage),
     );
     return _holidayInfo!;
   }
@@ -744,20 +745,24 @@ class MyanmarDateTime {
   /// Format Myanmar date with pattern
   String formatMyanmar([String? pattern, Language? language]) {
     final formatService = FormatService();
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
     return formatService.formatMyanmarDate(
       myanmarDate,
       pattern: pattern,
-      language: language,
+      language: currentLanguage,
     );
   }
 
   /// Format Western date with pattern
   String formatWestern([String? pattern, Language? language]) {
     final formatService = FormatService();
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
     return formatService.formatWesternDate(
       westernDate,
       pattern: pattern,
-      language: language,
+      language: currentLanguage,
     );
   }
 
@@ -770,11 +775,13 @@ class MyanmarDateTime {
     bool includeHolidays = false,
   }) {
     final formatService = FormatService();
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
     return formatService.formatCompleteDate(
       completeDate,
       myanmarPattern: myanmarPattern,
       westernPattern: westernPattern,
-      language: language,
+      language: currentLanguage,
       includeAstro: includeAstro,
       includeHolidays: includeHolidays,
     );

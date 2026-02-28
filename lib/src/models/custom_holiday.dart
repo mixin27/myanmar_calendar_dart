@@ -37,10 +37,26 @@ class CustomHoliday {
     required this.name,
     required this.type,
     required this.predicate,
-  });
+    String? cacheKey,
+    this.cacheVersion = 1,
+  }) : cacheKey = (cacheKey == null || cacheKey == '') ? id : cacheKey,
+       assert(cacheVersion > 0, 'cacheVersion must be greater than zero');
 
   /// Unique identifier for the holiday
   final String id;
+
+  /// Deterministic key used for cache fingerprinting.
+  ///
+  /// Defaults to [id].
+  final String cacheKey;
+
+  /// Cache-busting version for this holiday definition.
+  ///
+  /// Increase this when predicate logic changes while [id] remains the same.
+  final int cacheVersion;
+
+  /// Stable cache fingerprint used in cache keys.
+  String get cacheFingerprint => '$cacheKey:v$cacheVersion';
 
   /// Display name of the holiday (can be localized text)
   final String name;
@@ -61,5 +77,13 @@ class CustomHoliday {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'CustomHoliday(id: $id, name: $name, type: $type)';
+  String toString() {
+    return 'CustomHoliday('
+        'id: $id, '
+        'name: $name, '
+        'type: $type, '
+        'cacheKey: $cacheKey, '
+        'cacheVersion: $cacheVersion'
+        ')';
+  }
 }
