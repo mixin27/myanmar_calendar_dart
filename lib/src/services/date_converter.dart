@@ -666,9 +666,4 @@ class DateConverter {
     );
   }
 
-  /// Get complete year information as a map.
-  @Deprecated('Use getMyanmarYearInfo for typed access.')
-  Map<String, dynamic> getYearInfo(int myanmarYear) {
-    return getMyanmarYearInfo(myanmarYear).toMap();
-  }
 }

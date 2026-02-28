@@ -14,8 +14,29 @@
   - add typed `CustomHolidayContext` matcher API
   - add `CustomHoliday.westernDate` and `CustomHoliday.myanmarDate` builders
   - add localized custom holiday names via `localizedNames`
-  - deprecate legacy `predicate`-based API in favor of matcher/context
-  - add `customHolidayRules` configure alias and rule-oriented management APIs
+  - remove legacy `predicate`-based API in favor of matcher/context
+  - remove `CustomHoliday.legacy(...)`
+  - keep rule-oriented management APIs based on `customHolidayRules`
+- Add instance-first API:
+  - add `MyanmarCalendarClient` for isolated runtime/config/cache usage
+  - add `MyanmarCalendar.createClient(...)`
+- Add typed Myanmar-year metadata API:
+  - add `MyanmarYearInfo`
+  - add `DateConverter.getMyanmarYearInfo(...)`
+  - remove map-based `DateConverter.getYearInfo(...)`
+- Remove deprecated aliases:
+  - remove `MyanmarCalendar.addCustomHoliday(...)`
+  - remove `MyanmarCalendar.addCustomHolidays(...)`
+  - remove `MyanmarCalendar.removeCustomHoliday(...)`
+  - remove `MyanmarCalendar.clearCustomHolidays(...)`
+  - remove `customHolidays` alias parameter from `MyanmarCalendar.configure(...)`
+  - remove `customHolidays` alias parameter from `CalendarConfig.copyWith(...)`
+- Remove deprecated translation/service legacy methods:
+  - remove `TranslationService.currentLanguage`
+  - remove `TranslationService.setLanguage(...)`
+  - remove `TranslationService.translate(...)`
+  - remove `MyanmarCalendarService.setLanguage(...)`
+  - remove `MyanmarCalendarService.currentLanguage`
 - Make `HolidayInfo` and `AstroInfo` list fields immutable
 - Improve `CompleteDate` model consistency:
   - include Shan date in equality/hashCode

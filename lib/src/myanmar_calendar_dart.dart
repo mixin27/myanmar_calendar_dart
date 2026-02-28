@@ -76,7 +76,6 @@ class MyanmarCalendar {
   /// [calendarType] - Calendar system (0=British, 1=Gregorian, 2=Julian)
   /// [gregorianStart] - Julian Day Number of Gregorian calendar start
   /// [customHolidayRules] - List of custom holiday rules defined by the consumer
-  /// [customHolidays] - Legacy alias for [customHolidayRules]
   /// [disabledHolidays] - List of built-in holidays to disable globally
   /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
   /// [disabledHolidaysByDate] - Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
@@ -88,15 +87,11 @@ class MyanmarCalendar {
     int? calendarType,
     int? gregorianStart,
     List<CustomHoliday>? customHolidayRules,
-    @Deprecated('Use customHolidayRules instead.')
-    List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
     WesternHolidayProvider? westernHolidayProvider,
   }) {
-    final resolvedCustomHolidayRules = customHolidayRules ?? customHolidays;
-
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
       defaultLanguage: language?.code,
@@ -104,7 +99,7 @@ class MyanmarCalendar {
       sasanaYearType: sasanaYearType,
       calendarType: calendarType,
       gregorianStart: gregorianStart,
-      customHolidayRules: resolvedCustomHolidayRules,
+      customHolidayRules: customHolidayRules,
       disabledHolidays: disabledHolidays,
       disabledHolidaysByYear: disabledHolidaysByYear,
       disabledHolidaysByDate: disabledHolidaysByDate,
@@ -173,30 +168,6 @@ class MyanmarCalendar {
     cache
       ..clearHolidayInfoCache()
       ..clearCompleteDateCache();
-  }
-
-  /// Add a custom holiday to the configuration.
-  @Deprecated('Use addCustomHolidayRule instead.')
-  static void addCustomHoliday(CustomHoliday holiday) {
-    addCustomHolidayRule(holiday);
-  }
-
-  /// Add multiple custom holidays to the configuration.
-  @Deprecated('Use addCustomHolidayRules instead.')
-  static void addCustomHolidays(List<CustomHoliday> holidays) {
-    addCustomHolidayRules(holidays);
-  }
-
-  /// Remove a custom holiday from the configuration.
-  @Deprecated('Use removeCustomHolidayRuleById instead.')
-  static void removeCustomHoliday(CustomHoliday holiday) {
-    removeCustomHolidayRuleById(holiday.id);
-  }
-
-  /// Remove all custom holidays from the configuration.
-  @Deprecated('Use clearCustomHolidayRules instead.')
-  static void clearCustomHolidays() {
-    clearCustomHolidayRules();
   }
 
   /// Get current configuration

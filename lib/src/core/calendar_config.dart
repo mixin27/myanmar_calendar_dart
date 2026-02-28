@@ -160,22 +160,18 @@ class CalendarConfig {
     double? timezoneOffset,
     String? defaultLanguage,
     List<CustomHoliday>? customHolidayRules,
-    @Deprecated('Use customHolidayRules instead.')
-    List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
     WesternHolidayProvider? westernHolidayProvider,
   }) {
-    final resolvedCustomHolidayRules = customHolidayRules ?? customHolidays;
-
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
       calendarType: calendarType ?? this.calendarType,
       gregorianStart: gregorianStart ?? this.gregorianStart,
       timezoneOffset: timezoneOffset ?? this.timezoneOffset,
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
-      customHolidays: resolvedCustomHolidayRules ?? this.customHolidays,
+      customHolidays: customHolidayRules ?? customHolidays,
       disabledHolidays: disabledHolidays ?? this.disabledHolidays,
       disabledHolidaysByYear:
           disabledHolidaysByYear ?? this.disabledHolidaysByYear,

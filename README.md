@@ -176,7 +176,15 @@ final fullMoonFestival = CustomHoliday(
 );
 ```
 
-Legacy `predicate: (myanmarDate, westernDate) { ... }` is deprecated.
+Legacy untyped holiday predicates are removed. Use `matcher: (context) { ... }`.
+
+Removed legacy aliases:
+
+- `CustomHoliday.legacy(...)`
+- `MyanmarCalendar.addCustomHoliday(...)`
+- `MyanmarCalendar.addCustomHolidays(...)`
+- `MyanmarCalendar.removeCustomHoliday(...)`
+- `MyanmarCalendar.clearCustomHolidays(...)`
 
 ### Disable built-in holidays
 

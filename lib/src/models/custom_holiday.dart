@@ -3,15 +3,6 @@ import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 
-/// Legacy predicate function to determine if a date is a holiday.
-///
-/// Deprecated in favor of [CustomHolidayMatcher] using [CustomHolidayContext].
-typedef HolidayPredicate =
-    bool Function(
-      MyanmarDate myanmarDate,
-      WesternDate westernDate,
-    );
-
 /// Predicate function evaluated against a typed holiday context.
 typedef CustomHolidayMatcher = bool Function(CustomHolidayContext context);
 
@@ -55,28 +46,16 @@ class CustomHolidayContext {
 /// Represents a custom holiday rule defined by the consumer.
 class CustomHoliday {
   /// Creates a custom holiday rule.
-  ///
-  /// Use [matcher] for new code. [predicate] is kept for backward compatibility.
   const CustomHoliday({
     required this.id,
     required this.name,
     required this.type,
+    required CustomHolidayMatcher matcher,
     this.localizedNames = const {},
-    CustomHolidayMatcher? matcher,
-    @Deprecated(
-      'Use matcher or a builder like CustomHoliday.westernDate / '
-      'CustomHoliday.myanmarDate.',
-    )
-    HolidayPredicate? predicate,
     String? cacheKey,
     this.cacheVersion = 1,
   }) : _matcher = matcher,
-       _legacyPredicate = predicate,
        cacheKey = (cacheKey == null || cacheKey == '') ? id : cacheKey,
-       assert(
-         matcher != null || predicate != null,
-         'Either matcher or predicate must be provided',
-       ),
        assert(cacheVersion > 0, 'cacheVersion must be greater than zero');
 
   /// Creates a fixed-date western holiday rule.
@@ -187,31 +166,7 @@ class CustomHoliday {
     );
   }
 
-  /// Legacy constructor name kept for clearer migration messaging.
-  @Deprecated(
-    'Use CustomHoliday(...) with matcher or factory helpers '
-    '(CustomHoliday.westernDate / CustomHoliday.myanmarDate).',
-  )
-  factory CustomHoliday.legacy({
-    required String id,
-    required String name,
-    required HolidayType type,
-    required HolidayPredicate predicate,
-    String? cacheKey,
-    int cacheVersion = 1,
-  }) {
-    return CustomHoliday(
-      id: id,
-      name: name,
-      type: type,
-      predicate: predicate,
-      cacheKey: cacheKey,
-      cacheVersion: cacheVersion,
-    );
-  }
-
-  final CustomHolidayMatcher? _matcher;
-  final HolidayPredicate? _legacyPredicate;
+  final CustomHolidayMatcher _matcher;
 
   /// Unique identifier for the holiday.
   ///
@@ -229,21 +184,9 @@ class CustomHoliday {
   /// Type of holiday.
   final HolidayType type;
 
-  /// Legacy predicate API.
-  @Deprecated(
-    'Use matcher or a builder like CustomHoliday.westernDate / '
-    'CustomHoliday.myanmarDate.',
-  )
-  HolidayPredicate? get predicate => _legacyPredicate;
-
   /// Function to check if a specific date is this holiday.
   bool matches(CustomHolidayContext context) {
-    final matcher = _matcher;
-    if (matcher != null) return matcher(context);
-
-    final legacyPredicate = _legacyPredicate;
-    if (legacyPredicate == null) return false;
-    return legacyPredicate(context.myanmarDate, context.westernDate);
+    return _matcher(context);
   }
 
   /// Resolve holiday display name for [language].

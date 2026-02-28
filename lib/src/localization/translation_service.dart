@@ -21,37 +21,6 @@ import 'package:myanmar_calendar_dart/src/localization/translation_data.dart';
 class TranslationService {
   static const Language _defaultLanguage = Language.english;
 
-  /// Legacy language getter.
-  ///
-  /// Language is request-scoped now; this returns [Language.english] for
-  /// backward compatibility.
-  @Deprecated(
-    'Language is request-scoped. Pass language explicitly to API methods.',
-  )
-  static Language get currentLanguage => _defaultLanguage;
-
-  /// Legacy no-op setter kept for backward compatibility.
-  ///
-  /// Use `MyanmarCalendar.configure(language: ...)`,
-  /// `MyanmarCalendar.setLanguage(...)` or pass language per request instead.
-  @Deprecated(
-    'Language is request-scoped. Use configure/setLanguage on service facade '
-    'or pass language explicitly.',
-  )
-  static void setLanguage(Language language) {
-    // no-op
-  }
-
-  /// Translate a key using default language fallback.
-  ///
-  /// Prefer [translateTo] for explicit request-scoped behavior.
-  @Deprecated(
-    'Use translateTo with explicit language for request-scoped translation.',
-  )
-  static String translate(String key) {
-    return translateTo(key, _defaultLanguage);
-  }
-
   /// Translate a key to a specific language
   static String translateTo(String key, Language language) {
     return _translations[key]?[language] ?? key;

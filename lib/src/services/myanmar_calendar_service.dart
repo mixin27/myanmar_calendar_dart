@@ -349,20 +349,6 @@ class MyanmarCalendarService {
     return myanmarDate.yearType;
   }
 
-  /// Legacy API: language is request-scoped now.
-  @Deprecated(
-    'Language is request-scoped. Pass language per request instead.',
-  )
-  void setLanguage(Language language) {
-    // no-op: retained for backward compatibility
-  }
-
-  /// Legacy API: returns the constructor default language.
-  @Deprecated(
-    'Language is request-scoped. Pass language per request instead.',
-  )
-  Language get currentLanguage => _defaultLanguage;
-
   /// Get cache statistics
   Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();
 
