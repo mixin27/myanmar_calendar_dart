@@ -1,5 +1,3 @@
-// ignore_for_file: prefer_const_declarations, omit_local_variable_types, document_ignores, avoid_redundant_argument_values, avoid_multiple_declarations_per_line
-
 import 'package:myanmar_calendar_dart/myanmar_calendar_dart.dart';
 import 'package:myanmar_calendar_dart/src/services/date_converter.dart';
 import 'package:test/test.dart';
@@ -9,11 +7,11 @@ void main() {
     late DateConverter converter;
     late CalendarConfig config;
     // Myanmar Time is UTC+6:30 (6.5 hours)
-    final double offset = 6.5;
-    final double offsetInDays = offset / 24.0;
+    const offset = 6.5;
+    const offsetInDays = offset / 24.0;
 
     setUp(() {
-      config = CalendarConfig(timezoneOffset: offset);
+      config = const CalendarConfig(timezoneOffset: offset);
       // Use independent cache with default config since CalendarConfig doesn't expose it
       converter = DateConverter(config, cache: CalendarCache.independent());
     });
@@ -22,7 +20,7 @@ void main() {
       // 2024-01-01 12:00:00 Local Time
 
       // We'll calculate "Local JDN" by using a 0-offset converter
-      final zeroConfig = const CalendarConfig(timezoneOffset: 0);
+      const zeroConfig = CalendarConfig(timezoneOffset: 0);
       final zeroConverter = DateConverter(
         zeroConfig,
         cache: CalendarCache.independent(),
@@ -37,7 +35,7 @@ void main() {
     });
 
     test('julianToWestern should add timezone offset', () {
-      final zeroConfig = const CalendarConfig(timezoneOffset: 0);
+      const zeroConfig = CalendarConfig(timezoneOffset: 0);
       final zeroConverter = DateConverter(
         zeroConfig,
         cache: CalendarCache.independent(),
@@ -60,7 +58,12 @@ void main() {
 
     test('Round Trip verification', () {
       // 2024-04-17 12:00:00 (Thingyan New Year usually)
-      final y = 2024, m = 4, d = 17, h = 12, min = 0, s = 0;
+      const y = 2024;
+      const m = 4;
+      const d = 17;
+      const h = 12;
+      const min = 0;
+      const s = 0;
 
       final jdn = converter.westernToJulian(y, m, d, h, min, s);
       final westernDate = converter.julianToWestern(jdn);
@@ -77,11 +80,11 @@ void main() {
       // Myanmar Year 1385, Thadingyut Full Moon (Month 7, Day 15), 12:00:00 Local
       // Should result in a JDN that is offsetInDays less than "Local JDN"
 
-      final myYear = 1385;
-      final myMonth = 7;
-      final myDay = 15;
+      const myYear = 1385;
+      const myMonth = 7;
+      const myDay = 15;
 
-      final zeroConfig = const CalendarConfig(timezoneOffset: 0);
+      const zeroConfig = CalendarConfig(timezoneOffset: 0);
       final zeroConverter = DateConverter(
         zeroConfig,
         cache: CalendarCache.independent(),

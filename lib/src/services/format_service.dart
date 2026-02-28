@@ -34,7 +34,7 @@ class FormatService {
     String? pattern,
     Language? language,
   }) {
-    final currentLang = language ?? TranslationService.currentLanguage;
+    final currentLang = language ?? Language.english;
     final format = pattern ?? '&y &M &P &ff';
     var result = format;
 
@@ -149,7 +149,7 @@ class FormatService {
     String? pattern,
     Language? language,
   }) {
-    final currentLang = language ?? TranslationService.currentLanguage;
+    final currentLang = language ?? Language.english;
     final format = pattern ?? '%Www %y-%mm-%dd %HH:%nn:%ss';
     var result = format;
     final shortMonthName = _getShortWesternMonthName(date.month, currentLang);
@@ -318,7 +318,7 @@ class FormatService {
 
   /// Translate numbers to the current language
   String translateNumbers(String text, {Language? language}) {
-    final currentLang = language ?? TranslationService.currentLanguage;
+    final currentLang = language ?? Language.english;
 
     if (!TranslationService.shouldTranslateDigits(currentLang)) return text;
 
@@ -334,7 +334,7 @@ class FormatService {
 
   /// Format astro information
   String formatAstroInfo(AstroInfo astro, {Language? language}) {
-    final currentLang = language ?? TranslationService.currentLanguage;
+    final currentLang = language ?? Language.english;
 
     final tokens = <String>[
       if (astro.sabbath.isNotEmpty) astro.sabbath,
@@ -352,7 +352,7 @@ class FormatService {
 
   /// Format holiday information
   String formatHolidayInfo(HolidayInfo holidays, {Language? language}) {
-    final currentLang = language ?? TranslationService.currentLanguage;
+    final currentLang = language ?? Language.english;
     final allHolidays = holidays.allHolidays;
     if (allHolidays.isEmpty) return '';
 

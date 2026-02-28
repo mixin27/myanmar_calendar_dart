@@ -228,6 +228,11 @@ class MyanmarCalendar {
     return cache.getStatistics();
   }
 
+  /// Get typed global cache statistics.
+  static CalendarCacheStatistics getTypedCacheStatistics() {
+    return cache.getTypedStatistics();
+  }
+
   /// Warm up global cache
   static void warmUpCache({DateTime? startDate, DateTime? endDate}) {
     cache.warmUp(
@@ -417,8 +422,8 @@ class MyanmarCalendar {
   /// print('Moon phase: ${complete.moonPhase}');
   /// print('Astrological days: ${complete.astrologicalDays}');
   /// ```
-  static CompleteDate getCompleteDate(DateTime dateTime) {
-    return _serviceInstance.getCompleteDate(dateTime);
+  static CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
+    return _serviceInstance.getCompleteDate(dateTime, language: language);
   }
 
   /// Generate a structured AI prompt for a date
@@ -455,8 +460,8 @@ class MyanmarCalendar {
   ///
   /// Returns [HolidayInfo] containing public, religious, and cultural
   /// holidays for the given Myanmar date.
-  static HolidayInfo getHolidayInfo(MyanmarDate date) {
-    return _serviceInstance.getHolidayInfo(date);
+  static HolidayInfo getHolidayInfo(MyanmarDate date, {Language? language}) {
+    return _serviceInstance.getHolidayInfo(date, language: language);
   }
 
   /// Check if a Myanmar year is a watat year
@@ -496,8 +501,16 @@ class MyanmarCalendar {
   }
 
   /// Find auspicious days for a given Myanmar month and year
-  static List<CompleteDate> findAuspiciousDays(int year, int month) {
-    return _serviceInstance.findAuspiciousDays(year, month);
+  static List<CompleteDate> findAuspiciousDays(
+    int year,
+    int month, {
+    Language? language,
+  }) {
+    return _serviceInstance.findAuspiciousDays(
+      year,
+      month,
+      language: language,
+    );
   }
 
   /// Get description for Nakhat type
@@ -631,11 +644,10 @@ class MyanmarCalendar {
     return date.addDays(days);
   }
 
-  /// Add months to a Myanmar date (approximate)
+  /// Add months to a Myanmar date.
   ///
-  /// Returns a new [MyanmarDateTime] with approximately the specified
-  /// number of months added. This is an approximation due to varying
-  /// month lengths in the Myanmar calendar.
+  /// Returns a new [MyanmarDateTime] by following deterministic Myanmar month
+  /// transitions and clamping day-of-month where needed.
   static MyanmarDateTime addMonths(MyanmarDateTime date, int months) {
     final myanmarDate = CalendarUtils.addMonthsToMyanmarDate(
       date.myanmarDate,
@@ -691,7 +703,7 @@ class MyanmarCalendar {
     CalendarConfig.global = CalendarConfig.global.copyWith(
       defaultLanguage: language.code,
     );
-    _service?.setLanguage(language);
+    _service = null;
     _chronicles = null;
     MyanmarDateTime.clearSharedInstances();
     cache
@@ -699,8 +711,9 @@ class MyanmarCalendar {
       ..clearCompleteDateCache();
   }
 
-  /// Get the current language
-  static Language get currentLanguage => _serviceInstance.currentLanguage;
+  /// Get the configured default language.
+  static Language get currentLanguage =>
+      Language.fromCode(config.defaultLanguage);
 
   /// Get all supported languages
   static List<Language> get supportedLanguages => Language.values;
@@ -783,8 +796,14 @@ class MyanmarCalendar {
   ///
   /// Returns a list of [CompleteDate] objects for the given dates.
   /// Efficient for bulk processing of date information.
-  static List<CompleteDate> getCompleteDates(List<DateTime> dates) {
-    return CalendarUtils.getCompleteDatesForWesternDates(dates);
+  static List<CompleteDate> getCompleteDates(
+    List<DateTime> dates, {
+    Language? language,
+  }) {
+    return CalendarUtils.getCompleteDatesForWesternDates(
+      dates,
+      language: language,
+    );
   }
 
   // ============================================================================

@@ -340,6 +340,9 @@ MyanmarCalendar.resetCacheStatistics();
 
 final stats = MyanmarCalendar.getCacheStatistics();
 print(stats);
+
+final typedStats = MyanmarCalendar.getTypedCacheStatistics();
+print(typedStats.hitRate);
 ```
 
 ### Notes
@@ -363,7 +366,19 @@ Supported languages:
 
 ```dart
 MyanmarCalendar.setLanguage(Language.myanmar);
+
+final mm = MyanmarCalendar.getCompleteDate(
+  DateTime(2024, 1, 4),
+  language: Language.myanmar,
+);
+final en = MyanmarCalendar.getCompleteDate(
+  DateTime(2024, 1, 4),
+  language: Language.english,
+);
 ```
+
+`setLanguage` updates the default language. For per-request localization, pass
+`language:` directly to APIs that support it.
 
 ## Chronicle APIs
 

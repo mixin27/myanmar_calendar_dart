@@ -45,7 +45,7 @@ class MyanmarCalendarService {
          config: cacheConfig ?? const CacheConfig(),
        ),
        _formatService = FormatService(),
-       _currentLanguage =
+       _defaultLanguage =
            defaultLanguage ??
            Language.fromCode(
              (config ?? CalendarConfig.global).defaultLanguage,
@@ -62,7 +62,7 @@ class MyanmarCalendarService {
        _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.global(), // Use global cache
        _formatService = FormatService(),
-       _currentLanguage =
+       _defaultLanguage =
            defaultLanguage ??
            Language.fromCode(
              (config ?? CalendarConfig.global).defaultLanguage,
@@ -77,7 +77,7 @@ class MyanmarCalendarService {
   late final AstroCalculator _astroCalculator;
   late final HolidayCalculator _holidayCalculator;
   final FormatService _formatService;
-  Language _currentLanguage;
+  final Language _defaultLanguage;
 
   void _initializeServices() {
     _dateConverter = DateConverter(
@@ -191,11 +191,12 @@ class MyanmarCalendarService {
   }
 
   /// Get holiday information for a Myanmar date
-  HolidayInfo getHolidayInfo(MyanmarDate date) {
+  HolidayInfo getHolidayInfo(MyanmarDate date, {Language? language}) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _holidayCalculator.getHolidays(
       date,
       customHolidays: _config.customHolidayRules,
-      language: _currentLanguage,
+      language: resolvedLanguage,
     );
   }
 
@@ -205,10 +206,11 @@ class MyanmarCalendarService {
     String? pattern,
     Language? language,
   }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _formatService.formatMyanmarDate(
       date,
       pattern: pattern,
-      language: language ?? _currentLanguage,
+      language: resolvedLanguage,
     );
   }
 
@@ -218,17 +220,19 @@ class MyanmarCalendarService {
     String? pattern,
     Language? language,
   }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _formatService.formatWesternDate(
       date,
       pattern: pattern,
-      language: language ?? _currentLanguage,
+      language: resolvedLanguage,
     );
   }
 
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
-  CompleteDate getCompleteDate(DateTime dateTime) {
+  CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     final completeDateNamespace =
-        'complete_date|$_cacheNamespace|lang:${_currentLanguage.code}';
+        'complete_date|$_cacheNamespace|lang:${resolvedLanguage.code}';
 
     // Try to get from cache
     final cached = _cache.getCompleteDate(
@@ -250,7 +254,7 @@ class MyanmarCalendarService {
     final holidayInfo = _holidayCalculator.getHolidays(
       myanmarDate,
       customHolidays: _config.customHolidayRules,
-      language: _currentLanguage,
+      language: resolvedLanguage,
     );
 
     final completeDate = CompleteDate(
@@ -273,11 +277,18 @@ class MyanmarCalendarService {
   }
 
   /// Find auspicious days for a given Myanmar month and year
-  List<CompleteDate> findAuspiciousDays(int year, int month) {
+  List<CompleteDate> findAuspiciousDays(
+    int year,
+    int month, {
+    Language? language,
+  }) {
     final myanmarMonth = getMyanmarMonth(year, month);
     return myanmarMonth
         .map(
-          (md) => getCompleteDate(myanmarToWestern(md.year, md.month, md.day)),
+          (md) => getCompleteDate(
+            myanmarToWestern(md.year, md.month, md.day),
+            language: language,
+          ),
         )
         .where((cd) => cd.astro.isAuspicious)
         .toList();
@@ -337,17 +348,26 @@ class MyanmarCalendarService {
     return myanmarDate.yearType;
   }
 
-  /// Set language for the service
-  // ignore: use_setters_to_change_properties
+  /// Legacy API: language is request-scoped now.
+  @Deprecated(
+    'Language is request-scoped. Pass language per request instead.',
+  )
   void setLanguage(Language language) {
-    _currentLanguage = language;
+    // no-op: retained for backward compatibility
   }
 
-  /// Get current language
-  Language get currentLanguage => _currentLanguage;
+  /// Legacy API: returns the constructor default language.
+  @Deprecated(
+    'Language is request-scoped. Pass language per request instead.',
+  )
+  Language get currentLanguage => _defaultLanguage;
 
   /// Get cache statistics
   Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();
+
+  /// Get typed cache statistics.
+  CalendarCacheStatistics getTypedCacheStatistics() =>
+      _cache.getTypedStatistics();
 
   /// Clear cache
   void clearCache() => _cache.clearAll();

@@ -245,6 +245,7 @@ class MyanmarDateTime {
   static final AstroCalculator _sharedAstroCalculator = AstroCalculator(
     cache: CalendarCache.global(),
   );
+  static final FormatService _sharedFormatService = FormatService();
 
   /// Clear shared converters and holiday calculators.
   ///
@@ -744,10 +745,9 @@ class MyanmarDateTime {
 
   /// Format Myanmar date with pattern
   String formatMyanmar([String? pattern, Language? language]) {
-    final formatService = FormatService();
     final currentLanguage =
         language ?? Language.fromCode(config.defaultLanguage);
-    return formatService.formatMyanmarDate(
+    return _sharedFormatService.formatMyanmarDate(
       myanmarDate,
       pattern: pattern,
       language: currentLanguage,
@@ -756,10 +756,9 @@ class MyanmarDateTime {
 
   /// Format Western date with pattern
   String formatWestern([String? pattern, Language? language]) {
-    final formatService = FormatService();
     final currentLanguage =
         language ?? Language.fromCode(config.defaultLanguage);
-    return formatService.formatWesternDate(
+    return _sharedFormatService.formatWesternDate(
       westernDate,
       pattern: pattern,
       language: currentLanguage,
@@ -774,10 +773,9 @@ class MyanmarDateTime {
     bool includeAstro = false,
     bool includeHolidays = false,
   }) {
-    final formatService = FormatService();
     final currentLanguage =
         language ?? Language.fromCode(config.defaultLanguage);
-    return formatService.formatCompleteDate(
+    return _sharedFormatService.formatCompleteDate(
       completeDate,
       myanmarPattern: myanmarPattern,
       westernPattern: westernPattern,

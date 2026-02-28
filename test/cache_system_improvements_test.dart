@@ -47,6 +47,27 @@ void main() {
       expect(myanmarDate.publicHolidays, isNot(contains('Independence')));
     });
 
+    test('complete date language can be request-scoped', () {
+      MyanmarCalendar.configure(language: Language.english);
+      final date = DateTime(2024, 1, 4);
+
+      final english = MyanmarCalendar.getCompleteDate(date);
+      final myanmar = MyanmarCalendar.getCompleteDate(
+        date,
+        language: Language.myanmar,
+      );
+      final englishAgain = MyanmarCalendar.getCompleteDate(date);
+
+      final expectedMyanmar = TranslationService.translateTo(
+        'Independence',
+        Language.myanmar,
+      );
+
+      expect(english.publicHolidays, contains('Independence'));
+      expect(myanmar.publicHolidays, contains(expectedMyanmar));
+      expect(englishAgain.publicHolidays, contains('Independence'));
+    });
+
     test('invalid Western calendar date is rejected', () {
       expect(
         () => MyanmarCalendar.fromWestern(2024, 2, 30),
@@ -77,6 +98,15 @@ void main() {
 
       cache.clearAll();
       expect(cache.getShanDate(keyJdn), isNull);
+    });
+
+    test('typed cache statistics are available', () {
+      final cache = CalendarCache.independent();
+      final stats = cache.getTypedStatistics();
+
+      expect(stats.enabled, isTrue);
+      expect(stats.completeDate.maxSize, greaterThanOrEqualTo(0));
+      expect(stats.totalRequests, equals(0));
     });
 
     test('cache namespace is stable for equivalent table providers', () {

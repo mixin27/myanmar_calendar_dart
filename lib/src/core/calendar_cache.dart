@@ -100,6 +100,121 @@ class _CacheEntry<T> {
   }
 }
 
+/// Typed statistics for a single cache bucket.
+class CacheBucketStatistics {
+  /// Creates statistics for one cache bucket.
+  const CacheBucketStatistics({
+    required this.size,
+    required this.maxSize,
+    required this.ttl,
+    required this.enabled,
+  });
+
+  /// Current number of entries in this cache bucket.
+  final int size;
+
+  /// Maximum allowed entries in this cache bucket.
+  final int maxSize;
+
+  /// Time-to-live in seconds (0 means no expiration).
+  final int ttl;
+
+  /// Whether this cache bucket is enabled.
+  final bool enabled;
+
+  /// Utilization percentage (`size / maxSize * 100`).
+  double get utilizationPercent => maxSize > 0 ? (size / maxSize * 100) : 0.0;
+
+  /// Converts this statistics object to a serializable map.
+  Map<String, Object> toMap() {
+    return {
+      'size': size,
+      'maxSize': maxSize,
+      'utilizationPercent': utilizationPercent.toStringAsFixed(2),
+      'ttl': ttl,
+      'enabled': enabled,
+    };
+  }
+}
+
+/// Typed statistics snapshot for all caches managed by [CalendarCache].
+class CalendarCacheStatistics {
+  /// Creates a typed snapshot of all cache statistics.
+  const CalendarCacheStatistics({
+    required this.enabled,
+    required this.hits,
+    required this.misses,
+    required this.completeDate,
+    required this.myanmarDate,
+    required this.shanDate,
+    required this.westernDate,
+    required this.astroInfo,
+    required this.holidayInfo,
+  });
+
+  /// Whether caching is enabled globally for this cache instance.
+  final bool enabled;
+
+  /// Number of cache hits observed.
+  final int hits;
+
+  /// Number of cache misses observed.
+  final int misses;
+
+  /// Complete-date cache bucket statistics.
+  final CacheBucketStatistics completeDate;
+
+  /// Myanmar-date cache bucket statistics.
+  final CacheBucketStatistics myanmarDate;
+
+  /// Shan-date cache bucket statistics.
+  final CacheBucketStatistics shanDate;
+
+  /// Western-date cache bucket statistics.
+  final CacheBucketStatistics westernDate;
+
+  /// Astro-info cache bucket statistics.
+  final CacheBucketStatistics astroInfo;
+
+  /// Holiday-info cache bucket statistics.
+  final CacheBucketStatistics holidayInfo;
+
+  /// Total cache requests (`hits + misses`).
+  int get totalRequests => hits + misses;
+
+  /// Hit ratio (`hits / totalRequests`).
+  double get hitRate => totalRequests == 0 ? 0.0 : (hits / totalRequests);
+
+  /// Sum of entries across all cache buckets.
+  int get totalMemoryEntries =>
+      completeDate.size +
+      myanmarDate.size +
+      shanDate.size +
+      westernDate.size +
+      astroInfo.size +
+      holidayInfo.size;
+
+  /// Converts this statistics object to a serializable map.
+  Map<String, Object> toMap() {
+    return {
+      'enabled': enabled,
+      'hits': hits,
+      'misses': misses,
+      'total_requests': totalRequests,
+      'hit_rate_percent': (hitRate * 100).toStringAsFixed(2),
+      'caches': {
+        'complete_date': completeDate.toMap(),
+        'myanmar_date': myanmarDate.toMap(),
+        'shan_date': shanDate.toMap(),
+        'western_date': westernDate.toMap(),
+        'astro_info': astroInfo.toMap(),
+        'holiday_info': holidayInfo.toMap(),
+      },
+      'total_memory_entries': totalMemoryEntries,
+    };
+  }
+}
+
 /// LRU (Least Recently Used) Cache implementation
 class _LRUCache<K, V> {
   _LRUCache(this.maxSize, this.ttl, {this.enabled = true});
@@ -155,17 +270,14 @@ class _LRUCache<K, V> {
 
   bool containsKey(K key) => _cache.containsKey(key);
 
-  /// Get cache statistics
-  Map<String, dynamic> getStats() {
-    return {
-      'size': _cache.length,
-      'maxSize': maxSize,
-      'utilizationPercent': maxSize > 0
-          ? (_cache.length / maxSize * 100).toStringAsFixed(2)
-          : '0',
-      'ttl': ttl,
-      'enabled': enabled,
-    };
+  /// Get typed cache statistics.
+  CacheBucketStatistics getStats() {
+    return CacheBucketStatistics(
+      size: _cache.length,
+      maxSize: maxSize,
+      ttl: ttl,
+      enabled: enabled,
+    );
   }
 }
 
@@ -579,33 +691,24 @@ class CalendarCache {
     return _hits / total;
   }
 
-  /// Get statistics as map
+  /// Get typed cache statistics snapshot.
+  CalendarCacheStatistics getTypedStatistics() {
+    return CalendarCacheStatistics(
+      enabled: _config.enableCaching,
+      hits: _hits,
+      misses: _misses,
+      completeDate: _completeDateCache.getStats(),
+      myanmarDate: _myanmarDateCache.getStats(),
+      shanDate: _shanDateCache.getStats(),
+      westernDate: _westernDateCache.getStats(),
+      astroInfo: _astroInfoCache.getStats(),
+      holidayInfo: _holidayInfoCache.getStats(),
+    );
+  }
+
+  /// Legacy map-based statistics for backward compatibility.
   Map<String, dynamic> getStatistics() {
-    final total = _hits + _misses;
-    return {
-      'enabled': _config.enableCaching,
-      'hits': _hits,
-      'misses': _misses,
-      'total_requests': total,
-      'hit_rate_percent': total > 0
-          ? (hitRate * 100).toStringAsFixed(2)
-          : '0.00',
-      'caches': {
-        'complete_date': _completeDateCache.getStats(),
-        'myanmar_date': _myanmarDateCache.getStats(),
-        'shan_date': _shanDateCache.getStats(),
-        'western_date': _westernDateCache.getStats(),
-        'astro_info': _astroInfoCache.getStats(),
-        'holiday_info': _holidayInfoCache.getStats(),
-      },
-      'total_memory_entries':
-          _completeDateCache.size +
-          _myanmarDateCache.size +
-          _shanDateCache.size +
-          _westernDateCache.size +
-          _astroInfoCache.size +
-          _holidayInfoCache.size,
-    };
+    return getTypedStatistics().toMap();
   }
 
   /// Reset statistics
