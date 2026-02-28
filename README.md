@@ -1,7 +1,8 @@
 # Myanmar Calendar Dart
 
-[![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
-[![License: MIT][license_badge]][license_link]
+[![ci](https://github.com/mixin27/myanmar_calendar_dart/actions/workflows/main.yaml/badge.svg)](https://github.com/mixin27/myanmar_calendar_dart/actions/workflows/main.yaml)
+[![pub package](https://img.shields.io/pub/v/myanmar_calendar_dart.svg)](https://pub.dev/packages/myanmar_calendar_dart)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A pure Dart package for Myanmar calendar calculation, conversion, formatting,
 holiday rules, and astrological information.
@@ -483,8 +484,3 @@ The core calculation algorithms are based on the original work by
 ## License
 
 MIT License. See [LICENSE](LICENSE).
-
-[license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[license_link]: https://opensource.org/licenses/MIT
-[very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
-[very_good_analysis_link]: https://pub.dev/packages/very_good_analysis
