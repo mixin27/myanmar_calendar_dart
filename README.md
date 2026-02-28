@@ -437,7 +437,7 @@ try {
 
 The calculation algorithms are based on the original work by
 [Dr Yan Naing Aye](https://github.com/yan9a/mmcal) in Javascript and C++.
-I converted and adapted the implementation for Dart/Flutter.
+I converted and adapted the implementation for Dart.
 
 ## License
 

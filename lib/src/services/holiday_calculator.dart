@@ -6,13 +6,13 @@
 /// Language: [Original Language, e.g. CPP/JavaScript]
 /// License: [License type, MIT]
 ///
-/// Dart/Flutter conversion and adaptations by: Kyaw Zayar Tun
+/// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
 ///
 /// Notes:
 /// - The core algorithm originates from the above source.
 /// - This implementation is a re-creation in Dart, with
-///   modifications and optimizations for Flutter usage.
+///   modifications and optimizations for Dart package usage.
 /// ------------------------------------------------------------
 library;
 

@@ -468,7 +468,7 @@ class CalendarCache {
     DateTime dateTime,
     List<CustomHoliday>? customHolidays,
   ) {
-    final dateKey = '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+    final dateKey = dateTime.toUtc().microsecondsSinceEpoch.toString();
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
 
     final holidayIds = customHolidays.map((h) => h.id).toList()..sort();

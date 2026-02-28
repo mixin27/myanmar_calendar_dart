@@ -1,11 +1,11 @@
 /// Myanmar Calendar Package
 ///
-/// A comprehensive Flutter package for Myanmar calendar with date conversions,
+/// A comprehensive Dart package for Myanmar calendar with date conversions,
 /// astrological calculations, holiday information, and multi-language support.
 ///
 /// Author: Kyaw Zayar Tun
 /// Website: https://www.kyawzayartun.com
-/// GitHub:  https://github.com/mixin27/flutter-mmcalendar
+/// GitHub:  https://github.com/mixin27/myanmar_calendar_dart
 /// License: MIT
 ///
 /// ## Features
@@ -15,7 +15,7 @@
 /// - **Holiday Calculations**: Myanmar holidays, religious days, cultural celebrations
 /// - **Multi-language Support**: Myanmar (Unicode), Myanmar (Zawgyi), Mon, Shan, Karen, English
 /// - **Formatting Services**: Flexible date formatting with localization
-/// - **UI Widgets**: Ready-to-use calendar widgets and date pickers
+/// - **Chronicle Data**: Historical chronicle and dynasty lookup support
 /// - **Validation**: Comprehensive date validation with detailed error messages
 /// - **Utilities**: Helper functions for date calculations and manipulations
 ///

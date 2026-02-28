@@ -246,6 +246,15 @@ class MyanmarDateTime {
     cache: CalendarCache.global(),
   );
 
+  /// Clear shared converters and holiday calculators.
+  ///
+  /// This is used when global configuration is updated so future instances
+  /// are created with the latest configuration object.
+  static void clearSharedInstances() {
+    _converters.clear();
+    _holidayCalculators.clear();
+  }
+
   /// Get or create a shared converter for the given config
   static DateConverter _getConverter(CalendarConfig config) {
     final key = config.hashCode.toString();

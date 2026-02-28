@@ -104,6 +104,8 @@ class MyanmarCalendar {
 
     // Reset service to pick up new configuration
     _service = null;
+    _chronicles = null;
+    MyanmarDateTime.clearSharedInstances();
 
     // Clear holiday cache to ensure new custom holidays are picked up
     cache
@@ -121,7 +123,11 @@ class MyanmarCalendar {
     CalendarConfig.global = CalendarConfig.global.copyWith(
       customHolidays: [...CalendarConfig.global.customHolidays, holiday],
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Add multiple custom holidays to the configuration
@@ -129,7 +135,11 @@ class MyanmarCalendar {
     CalendarConfig.global = CalendarConfig.global.copyWith(
       customHolidays: [...CalendarConfig.global.customHolidays, ...holidays],
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Remove a custom holiday from the configuration
@@ -139,13 +149,21 @@ class MyanmarCalendar {
           .where((h) => h.id != holiday.id)
           .toList(),
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Remove all custom holidays from the configuration
   static void clearCustomHolidays() {
     CalendarConfig.global = CalendarConfig.global.copyWith(customHolidays: []);
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Get current configuration
@@ -162,6 +180,7 @@ class MyanmarCalendar {
   static void configureCache(CacheConfig cacheConfig) {
     CalendarCache.configureGlobal(cacheConfig);
     _service = null; // Reset service to use new cache
+    MyanmarDateTime.clearSharedInstances();
   }
 
   /// Get global cache instance
@@ -764,7 +783,10 @@ class MyanmarCalendar {
   /// Useful for testing or clearing custom configurations.
   static void reset() {
     CalendarConfig.global = const CalendarConfig();
+    _chronicles = null;
     _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache.clearAll();
     TranslationService.setLanguage(Language.english);
   }
 
