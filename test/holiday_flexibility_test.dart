@@ -81,17 +81,17 @@ void main() {
     });
 
     test('should work with custom holidays while built-in is disabled', () {
-      final extraHoliday = CustomHoliday(
+      final extraHoliday = CustomHoliday.westernDate(
         id: 'extra',
         name: 'Extra',
         type: HolidayType.public,
-        predicate: (myanmarDate, westernDate) =>
-            westernDate.day == 4 && westernDate.month == 1,
+        month: 1,
+        day: 4,
       );
 
       MyanmarCalendar.configure(
         disabledHolidays: [HolidayId.independenceDay],
-        customHolidays: [extraHoliday],
+        customHolidayRules: [extraHoliday],
       );
 
       final date = MyanmarCalendar.fromWestern(2024, 1, 4);
@@ -117,6 +117,39 @@ void main() {
       // Check other year - same date
       final dateOtherYear = MyanmarCalendar.fromWestern(2025, 4, 17);
       expect(dateOtherYear.publicHolidays, contains("Myanmar New Year's Day"));
+    });
+
+    test('should allow custom western holiday provider rules', () {
+      const provider = TableWesternHolidayProvider(
+        singleDayRules: {
+          HolidayId.diwali: {
+            2045: WesternHolidayDate(month: 11, day: 2),
+          },
+        },
+      );
+
+      MyanmarCalendar.configure(westernHolidayProvider: provider);
+
+      final matching = MyanmarCalendar.fromWestern(2045, 11, 2);
+      final nonMatching = MyanmarCalendar.fromWestern(2045, 11, 3);
+
+      expect(matching.otherHolidays, contains('Diwali'));
+      expect(nonMatching.otherHolidays, isNot(contains('Diwali')));
+    });
+
+    test('empty western holiday provider disables approximate defaults', () {
+      MyanmarCalendar.configure(
+        westernHolidayProvider: const TableWesternHolidayProvider(),
+      );
+
+      final knownDiwali = MyanmarCalendar.fromWestern(2026, 11, 8);
+      final knownEidFitr = MyanmarCalendar.fromWestern(2026, 3, 20);
+
+      expect(knownDiwali.otherHolidays, isNot(contains('Diwali')));
+      expect(
+        knownEidFitr.otherAnniversaryDays,
+        isNot(contains('Eid al-Fitr')),
+      );
     });
   });
 }

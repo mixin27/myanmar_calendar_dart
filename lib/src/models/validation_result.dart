@@ -195,7 +195,9 @@ class ValidationResult {
     return ValidationResult(
       isValid: map['isValid'] as bool,
       error: map['error'] as String?,
-      warnings: List<String>.from(map['warnings'] ?? []),
+      warnings: List<String>.from(
+        (map['warnings'] as List<dynamic>?) ?? const <dynamic>[],
+      ),
       context: map['context'] as Map<String, dynamic>?,
       errorCode: map['errorCode'] as String?,
       severity: ValidationSeverity.values.firstWhere(
@@ -203,7 +205,9 @@ class ValidationResult {
         orElse: () => ValidationSeverity.error,
       ),
       field: map['field'] as String?,
-      suggestions: List<String>.from(map['suggestions'] ?? []),
+      suggestions: List<String>.from(
+        (map['suggestions'] as List<dynamic>?) ?? const <dynamic>[],
+      ),
     );
   }
 

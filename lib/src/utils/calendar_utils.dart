@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
@@ -132,31 +133,94 @@ class CalendarUtils {
     return service.julianToMyanmar(newJdn);
   }
 
-  /// Adds months to a Myanmar date (approximate)
+  /// Adds months to a Myanmar date using deterministic month boundaries.
   ///
-  /// This method adds approximately [months] months to the date.
-  /// Since Myanmar months vary in length, this is an approximation.
+  /// Month progression is computed from real Myanmar month transitions rather
+  /// than arithmetic approximation, so edge cases around intercalary months
+  /// and variable month lengths remain consistent.
   static MyanmarDate addMonthsToMyanmarDate(MyanmarDate date, int months) {
     final service = MyanmarCalendarService();
-    var newYear = date.year;
-    var newMonth = date.month + months;
-
-    // Handle month overflow/underflow
-    while (newMonth > 14) {
-      newMonth -= 12; // Assuming 12 regular months per year
-      newYear++;
-    }
-    while (newMonth < 1) {
-      newMonth += 12;
-      newYear--;
+    if (months == 0) {
+      return service.julianToMyanmar(date.julianDayNumber);
     }
 
-    // Adjust day if it exceeds the new month's length
-    final monthLength = getMonthLength(newMonth, service.getYearType(newYear));
-    final newDay = math.min(date.day, monthLength);
+    final originalDay = date.day;
+    var targetMonthStartJdn = _findMonthStartJdn(
+      service,
+      date.julianDayNumber,
+    );
 
-    final newJdn = service.myanmarToJulian(newYear, newMonth, newDay);
-    return service.julianToMyanmar(newJdn);
+    final steps = months.abs();
+    for (var i = 0; i < steps; i++) {
+      if (months > 0) {
+        targetMonthStartJdn = _findNextMonthStartJdn(
+          service,
+          targetMonthStartJdn,
+        );
+      } else {
+        targetMonthStartJdn = _findPreviousMonthStartJdn(
+          service,
+          targetMonthStartJdn,
+        );
+      }
+    }
+
+    final targetMonthLength = _monthLengthByTransition(
+      service,
+      targetMonthStartJdn,
+    );
+    final targetDay = math.min(originalDay, targetMonthLength);
+    final targetJdn = targetMonthStartJdn + (targetDay - 1);
+    return service.julianToMyanmar(targetJdn);
+  }
+
+  static double _findMonthStartJdn(MyanmarCalendarService service, double jdn) {
+    final current = service.julianToMyanmar(jdn);
+    var cursor = current.julianDayNumber;
+
+    while (true) {
+      final previousDay = service.julianToMyanmar(cursor - 1);
+      if (previousDay.year != current.year ||
+          previousDay.month != current.month) {
+        return cursor;
+      }
+      cursor -= 1;
+    }
+  }
+
+  static double _findNextMonthStartJdn(
+    MyanmarCalendarService service,
+    double monthStartJdn,
+  ) {
+    final monthStart = service.julianToMyanmar(monthStartJdn);
+    var cursor = monthStartJdn + 1;
+
+    while (true) {
+      final candidate = service.julianToMyanmar(cursor);
+      if (candidate.year != monthStart.year ||
+          candidate.month != monthStart.month) {
+        return candidate.julianDayNumber;
+      }
+      cursor += 1;
+    }
+  }
+
+  static double _findPreviousMonthStartJdn(
+    MyanmarCalendarService service,
+    double currentMonthStartJdn,
+  ) {
+    final previousMonthAnyDay = service.julianToMyanmar(
+      currentMonthStartJdn - 1,
+    );
+    return _findMonthStartJdn(service, previousMonthAnyDay.julianDayNumber);
+  }
+
+  static int _monthLengthByTransition(
+    MyanmarCalendarService service,
+    double monthStartJdn,
+  ) {
+    final nextMonthStartJdn = _findNextMonthStartJdn(service, monthStartJdn);
+    return (nextMonthStartJdn - monthStartJdn).round();
   }
 
   /// Gets the number of days in a Myanmar month
@@ -475,8 +539,9 @@ class CalendarUtils {
   ///
   /// Efficiently processes multiple dates to get complete information.
   static List<CompleteDate> getCompleteDatesForWesternDates(
-    List<DateTime> dates,
-  ) {
+    List<DateTime> dates, {
+    Language? language,
+  }) {
     final service = MyanmarCalendarService();
     final results = <CompleteDate>[];
 
@@ -487,7 +552,7 @@ class CalendarUtils {
       final batch = dates.sublist(i, end);
 
       for (final date in batch) {
-        results.add(service.getCompleteDate(date));
+        results.add(service.getCompleteDate(date, language: language));
       }
     }
 
@@ -682,11 +747,14 @@ class CalendarUtils {
     return dates.where((date) => seen.add(date.julianDayNumber)).toList();
   }
 
-  /// Convert a number to a string according to the current global language setting.
+  /// Convert a number to a localized string.
   ///
   /// `number` - Number to convert
   /// Returns translated number as string.
-  static String convertNumberToLanguage(double number) {
+  static String convertNumberToLanguage(
+    double number, {
+    Language language = Language.english,
+  }) {
     var r = 0;
     var s = '';
     var g = '';
@@ -701,7 +769,7 @@ class CalendarUtils {
     do {
       r = (number % 10).toInt();
       number = (number / 10).floorToDouble();
-      s = TranslationService.translate(r.toString()) + s;
+      s = TranslationService.translateTo(r.toString(), language) + s;
     } while (number > 0);
 
     return g + s;

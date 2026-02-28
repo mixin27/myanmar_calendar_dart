@@ -17,7 +17,7 @@ class PackageConstants {
   static const String packageName = 'myanmar_calendar_dart';
 
   /// Package version
-  static const String version = '1.0.0';
+  static const String version = '1.1.5';
 
   /// Package description
   static const String description =
@@ -159,6 +159,8 @@ class PackageConstants {
     '&w': 'Weekday number [0-6]',
     '&YT': 'Year type [e.g. Common Year, Little Watat]',
     '&N': 'Year name [e.g. Hpusha, Magha]',
+    '&Nay': 'Localized day word [e.g. Nay]',
+    '&Yat': 'Localized date-day word [e.g. Yat]',
   };
 
   /// Western format pattern placeholders documentation

@@ -1,11 +1,11 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
-import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
+import 'package:myanmar_calendar_dart/src/models/myanmar_year_info.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
@@ -41,12 +41,17 @@ class MyanmarCalendarService {
     CacheConfig? cacheConfig,
     Language? defaultLanguage,
   }) : _config = config ?? CalendarConfig.global,
+       _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.independent(
          config: cacheConfig ?? const CacheConfig(),
        ),
-       _formatService = FormatService() {
+       _formatService = FormatService(),
+       _defaultLanguage =
+           defaultLanguage ??
+           Language.fromCode(
+             (config ?? CalendarConfig.global).defaultLanguage,
+           ) {
     _initializeServices();
-    _setLanguage(defaultLanguage);
   }
 
   /// Create service that uses the global shared cache
@@ -55,33 +60,34 @@ class MyanmarCalendarService {
     CalendarConfig? config,
     Language? defaultLanguage,
   }) : _config = config ?? CalendarConfig.global,
+       _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.global(), // Use global cache
-       _formatService = FormatService() {
+       _formatService = FormatService(),
+       _defaultLanguage =
+           defaultLanguage ??
+           Language.fromCode(
+             (config ?? CalendarConfig.global).defaultLanguage,
+           ) {
     _initializeServices();
-    _setLanguage(defaultLanguage);
   }
 
   final CalendarConfig _config;
+  final String _cacheNamespace;
   final CalendarCache _cache;
   late final DateConverter _dateConverter;
   late final AstroCalculator _astroCalculator;
   late final HolidayCalculator _holidayCalculator;
   final FormatService _formatService;
+  final Language _defaultLanguage;
 
   void _initializeServices() {
-    _dateConverter = DateConverter(_config, cache: _cache);
+    _dateConverter = DateConverter(
+      _config,
+      cache: _cache,
+      cacheNamespace: 'date_converter|$_cacheNamespace',
+    );
     _astroCalculator = AstroCalculator(cache: _cache);
     _holidayCalculator = HolidayCalculator(cache: _cache, config: _config);
-  }
-
-  void _setLanguage(Language? defaultLanguage) {
-    if (defaultLanguage != null) {
-      TranslationService.setLanguage(defaultLanguage);
-    } else {
-      TranslationService.setLanguage(
-        Language.fromCode(_config.defaultLanguage),
-      );
-    }
   }
 
   /// Get calendar configuration
@@ -186,10 +192,12 @@ class MyanmarCalendarService {
   }
 
   /// Get holiday information for a Myanmar date
-  HolidayInfo getHolidayInfo(MyanmarDate date) {
+  HolidayInfo getHolidayInfo(MyanmarDate date, {Language? language}) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _holidayCalculator.getHolidays(
       date,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
+      language: resolvedLanguage,
     );
   }
 
@@ -199,10 +207,11 @@ class MyanmarCalendarService {
     String? pattern,
     Language? language,
   }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _formatService.formatMyanmarDate(
       date,
       pattern: pattern,
-      language: language,
+      language: resolvedLanguage,
     );
   }
 
@@ -212,19 +221,25 @@ class MyanmarCalendarService {
     String? pattern,
     Language? language,
   }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
     return _formatService.formatWesternDate(
       date,
       pattern: pattern,
-      language: language,
+      language: resolvedLanguage,
     );
   }
 
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
-  CompleteDate getCompleteDate(DateTime dateTime) {
+  CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
+    final resolvedLanguage = language ?? _defaultLanguage;
+    final completeDateNamespace =
+        'complete_date|$_cacheNamespace|lang:${resolvedLanguage.code}';
+
     // Try to get from cache
     final cached = _cache.getCompleteDate(
       dateTime,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
+      namespace: completeDateNamespace,
     );
     if (cached != null) {
       return cached;
@@ -239,7 +254,8 @@ class MyanmarCalendarService {
     final astroInfo = _astroCalculator.calculate(myanmarDate);
     final holidayInfo = _holidayCalculator.getHolidays(
       myanmarDate,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
+      language: resolvedLanguage,
     );
 
     final completeDate = CompleteDate(
@@ -254,18 +270,26 @@ class MyanmarCalendarService {
     _cache.putCompleteDate(
       dateTime,
       completeDate,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
+      namespace: completeDateNamespace,
     );
 
     return completeDate;
   }
 
   /// Find auspicious days for a given Myanmar month and year
-  List<CompleteDate> findAuspiciousDays(int year, int month) {
+  List<CompleteDate> findAuspiciousDays(
+    int year,
+    int month, {
+    Language? language,
+  }) {
     final myanmarMonth = getMyanmarMonth(year, month);
     return myanmarMonth
         .map(
-          (md) => getCompleteDate(myanmarToWestern(md.year, md.month, md.day)),
+          (md) => getCompleteDate(
+            myanmarToWestern(md.year, md.month, md.day),
+            language: language,
+          ),
         )
         .where((cd) => cd.astro.isAuspicious)
         .toList();
@@ -276,8 +300,8 @@ class MyanmarCalendarService {
     final dates = <MyanmarDate>[];
 
     // get first day of myanmar month
-    final yearInfo = _dateConverter.getYearInfo(year);
-    final yearType = yearInfo['yearType'];
+    final yearInfo = _dateConverter.getMyanmarYearInfo(year);
+    final yearType = yearInfo.yearType;
 
     // We don't use Late Kason, Just Kason
     if (month == 14 && yearType == 0) {
@@ -325,19 +349,39 @@ class MyanmarCalendarService {
     return myanmarDate.yearType;
   }
 
-  /// Set language for the service
-  void setLanguage(Language language) {
-    TranslationService.setLanguage(language);
-  }
-
-  /// Get current language
-  Language get currentLanguage => TranslationService.currentLanguage;
-
   /// Get cache statistics
   Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();
 
+  /// Get typed cache statistics.
+  CalendarCacheStatistics getTypedCacheStatistics() =>
+      _cache.getTypedStatistics();
+
+  /// Reset cache statistics.
+  void resetCacheStatistics() => _cache.resetStatistics();
+
+  /// Warm up complete-date cache entries for a date range.
+  void warmUpCache({
+    DateTime? startDate,
+    DateTime? endDate,
+    Language? language,
+  }) {
+    final resolvedLanguage = language ?? _defaultLanguage;
+    _cache.warmUp(
+      startDate: startDate,
+      endDate: endDate,
+      resolveCompleteDate: (dateTime) {
+        return getCompleteDate(dateTime, language: resolvedLanguage);
+      },
+    );
+  }
+
   /// Clear cache
   void clearCache() => _cache.clearAll();
+
+  /// Get typed Myanmar year metadata.
+  MyanmarYearInfo getMyanmarYearInfo(int myanmarYear) {
+    return _dateConverter.getMyanmarYearInfo(myanmarYear);
+  }
 
   /// Validate Myanmar date
   ValidationResult validateMyanmarDate(int year, int month, int day) {

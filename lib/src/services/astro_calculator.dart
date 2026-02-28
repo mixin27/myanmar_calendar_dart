@@ -1,18 +1,16 @@
 /// ------------------------------------------------------------
 /// Astrological Information Calculation Core
 ///
-/// Based on original algorithms by: [Dr Yan Naing Aye]
-/// Source: https://github.com/yan9a/mmcal
-/// Language: [Original Language, JavaScript, CPP]
-/// License: [License type, MIT]
+/// Ported from the original Myanmar calendar implementation by Dr Yan Naing Aye.
+/// Source: https://github.com/yan9a/mmcal (MIT License)
 ///
-/// Dart/Flutter conversion and adaptations by: Kyaw Zayar Tun
+/// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
 ///
 /// Notes:
 /// - The core algorithm originates from the above source.
 /// - This implementation is a re-creation in Dart, with
-///   modifications and optimizations for Flutter usage.
+///   modifications and optimizations for Dart package usage.
 /// ------------------------------------------------------------
 library;
 

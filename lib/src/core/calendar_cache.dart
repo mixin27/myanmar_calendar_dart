@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
@@ -5,6 +7,9 @@ import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
+
+/// Typed callback contract used to warm up complete-date cache entries.
+typedef CompleteDateResolver = CompleteDate Function(DateTime dateTime);
 
 /// Cache configuration options
 class CacheConfig {
@@ -95,33 +100,143 @@ class _CacheEntry<T> {
   }
 }
 
+/// Typed statistics for a single cache bucket.
+class CacheBucketStatistics {
+  /// Creates statistics for one cache bucket.
+  const CacheBucketStatistics({
+    required this.size,
+    required this.maxSize,
+    required this.ttl,
+    required this.enabled,
+  });
+
+  /// Current number of entries in this cache bucket.
+  final int size;
+
+  /// Maximum allowed entries in this cache bucket.
+  final int maxSize;
+
+  /// Time-to-live in seconds (0 means no expiration).
+  final int ttl;
+
+  /// Whether this cache bucket is enabled.
+  final bool enabled;
+
+  /// Utilization percentage (`size / maxSize * 100`).
+  double get utilizationPercent => maxSize > 0 ? (size / maxSize * 100) : 0.0;
+
+  /// Converts this statistics object to a serializable map.
+  Map<String, Object> toMap() {
+    return {
+      'size': size,
+      'maxSize': maxSize,
+      'utilizationPercent': utilizationPercent.toStringAsFixed(2),
+      'ttl': ttl,
+      'enabled': enabled,
+    };
+  }
+}
+
+/// Typed statistics snapshot for all caches managed by [CalendarCache].
+class CalendarCacheStatistics {
+  /// Creates a typed snapshot of all cache statistics.
+  const CalendarCacheStatistics({
+    required this.enabled,
+    required this.hits,
+    required this.misses,
+    required this.completeDate,
+    required this.myanmarDate,
+    required this.shanDate,
+    required this.westernDate,
+    required this.astroInfo,
+    required this.holidayInfo,
+  });
+
+  /// Whether caching is enabled globally for this cache instance.
+  final bool enabled;
+
+  /// Number of cache hits observed.
+  final int hits;
+
+  /// Number of cache misses observed.
+  final int misses;
+
+  /// Complete-date cache bucket statistics.
+  final CacheBucketStatistics completeDate;
+
+  /// Myanmar-date cache bucket statistics.
+  final CacheBucketStatistics myanmarDate;
+
+  /// Shan-date cache bucket statistics.
+  final CacheBucketStatistics shanDate;
+
+  /// Western-date cache bucket statistics.
+  final CacheBucketStatistics westernDate;
+
+  /// Astro-info cache bucket statistics.
+  final CacheBucketStatistics astroInfo;
+
+  /// Holiday-info cache bucket statistics.
+  final CacheBucketStatistics holidayInfo;
+
+  /// Total cache requests (`hits + misses`).
+  int get totalRequests => hits + misses;
+
+  /// Hit ratio (`hits / totalRequests`).
+  double get hitRate => totalRequests == 0 ? 0.0 : (hits / totalRequests);
+
+  /// Sum of entries across all cache buckets.
+  int get totalMemoryEntries =>
+      completeDate.size +
+      myanmarDate.size +
+      shanDate.size +
+      westernDate.size +
+      astroInfo.size +
+      holidayInfo.size;
+
+  /// Converts this statistics object to a serializable map.
+  Map<String, Object> toMap() {
+    return {
+      'enabled': enabled,
+      'hits': hits,
+      'misses': misses,
+      'total_requests': totalRequests,
+      'hit_rate_percent': (hitRate * 100).toStringAsFixed(2),
+      'caches': {
+        'complete_date': completeDate.toMap(),
+        'myanmar_date': myanmarDate.toMap(),
+        'shan_date': shanDate.toMap(),
+        'western_date': westernDate.toMap(),
+        'astro_info': astroInfo.toMap(),
+        'holiday_info': holidayInfo.toMap(),
+      },
+      'total_memory_entries': totalMemoryEntries,
+    };
+  }
+}
+
 /// LRU (Least Recently Used) Cache implementation
 class _LRUCache<K, V> {
   _LRUCache(this.maxSize, this.ttl, {this.enabled = true});
   final int maxSize;
   final int ttl;
   final bool enabled;
-  final Map<K, _CacheEntry<V>> _cache = {};
-  final List<K> _accessOrder = [];
+  final LinkedHashMap<K, _CacheEntry<V>> _cache = LinkedHashMap();
 
   V? get(K key) {
     // If caching is disabled, always return null
     if (!enabled || maxSize == 0) return null;
 
-    final entry = _cache[key];
+    final entry = _cache.remove(key);
     if (entry == null) return null;
 
     // Check if expired
     if (entry.isExpired(ttl)) {
-      _cache.remove(key);
-      _accessOrder.remove(key);
       return null;
     }
 
-    // Update access order
-    _accessOrder
-      ..remove(key)
-      ..add(key);
+    // Reinsert to move this key to MRU position.
+    _cache[key] = entry;
 
     return entry.value;
   }
@@ -131,46 +246,38 @@ class _LRUCache<K, V> {
     if (!enabled || maxSize == 0) return;
 
     // Remove if already exists
-    if (_cache.containsKey(key)) {
-      _accessOrder.remove(key);
-    }
+    _cache.remove(key);
 
     // Add new entry
     _cache[key] = _CacheEntry(value);
-    _accessOrder.add(key);
 
-    // Evict oldest if necessary
-    while (_accessOrder.length > maxSize) {
-      final oldestKey = _accessOrder.removeAt(0);
+    // Evict LRU if necessary.
+    while (_cache.length > maxSize) {
+      final oldestKey = _cache.keys.first;
       _cache.remove(oldestKey);
     }
   }
 
   void remove(K key) {
     _cache.remove(key);
-    _accessOrder.remove(key);
   }
 
   void clear() {
     _cache.clear();
-    _accessOrder.clear();
   }
 
   int get size => _cache.length;
 
   bool containsKey(K key) => _cache.containsKey(key);
 
-  /// Get cache statistics
-  Map<String, dynamic> getStats() {
-    return {
-      'size': _cache.length,
-      'maxSize': maxSize,
-      'utilizationPercent': maxSize > 0
-          ? (_cache.length / maxSize * 100).toStringAsFixed(2)
-          : '0',
-      'ttl': ttl,
-      'enabled': enabled,
-    };
+  /// Get typed cache statistics.
+  CacheBucketStatistics getStats() {
+    return CacheBucketStatistics(
+      size: _cache.length,
+      maxSize: maxSize,
+      ttl: ttl,
+      enabled: enabled,
+    );
   }
 }
 
@@ -282,13 +389,18 @@ class CalendarCache {
   CompleteDate? getCompleteDate(
     DateTime dateTime, {
     List<CustomHoliday>? customHolidays,
+    String namespace = '',
   }) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = _generateCompleteDateKey(dateTime, customHolidays);
+    final key = _generateCompleteDateKey(
+      dateTime,
+      customHolidays,
+      namespace: namespace,
+    );
     final cached = _completeDateCache.get(key);
 
     if (cached != null) {
@@ -305,20 +417,25 @@ class CalendarCache {
     DateTime dateTime,
     CompleteDate completeDate, {
     List<CustomHoliday>? customHolidays,
+    String namespace = '',
   }) {
     if (!_config.enableCaching) return;
-    final key = _generateCompleteDateKey(dateTime, customHolidays);
+    final key = _generateCompleteDateKey(
+      dateTime,
+      customHolidays,
+      namespace: namespace,
+    );
     _completeDateCache.put(key, completeDate);
   }
 
   /// Get cached MyanmarDate
-  MyanmarDate? getMyanmarDate(double julianDayNumber) {
+  MyanmarDate? getMyanmarDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _myanmarDateCache.get(key);
 
     if (cached != null) {
@@ -331,20 +448,24 @@ class CalendarCache {
   }
 
   /// Cache MyanmarDate
-  void putMyanmarDate(double julianDayNumber, MyanmarDate myanmarDate) {
+  void putMyanmarDate(
+    double julianDayNumber,
+    MyanmarDate myanmarDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _myanmarDateCache.put(key, myanmarDate);
   }
 
   /// Get cached WesternDate
-  WesternDate? getWesternDate(double julianDayNumber) {
+  WesternDate? getWesternDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _westernDateCache.get(key);
 
     if (cached != null) {
@@ -357,20 +478,24 @@ class CalendarCache {
   }
 
   /// Cache WesternDate
-  void putWesternDate(double julianDayNumber, WesternDate westernDate) {
+  void putWesternDate(
+    double julianDayNumber,
+    WesternDate westernDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _westernDateCache.put(key, westernDate);
   }
 
   /// Get cached ShanDate
-  ShanDate? getShanDate(double julianDayNumber) {
+  ShanDate? getShanDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _shanDateCache.get(key);
 
     if (cached != null) {
@@ -383,20 +508,24 @@ class CalendarCache {
   }
 
   /// Cache ShanDate
-  void putShanDate(double julianDayNumber, ShanDate shanDate) {
+  void putShanDate(
+    double julianDayNumber,
+    ShanDate shanDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _shanDateCache.put(key, shanDate);
   }
 
   /// Get cached AstroInfo
-  AstroInfo? getAstroInfo(dynamic myanmarDate) {
+  AstroInfo? getAstroInfo(MyanmarDate myanmarDate, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = _generateMyanmarDateKey(myanmarDate);
+    final key = _namespaceKey(_generateMyanmarDateKey(myanmarDate), namespace);
     final cached = _astroInfoCache.get(key);
 
     if (cached != null) {
@@ -409,31 +538,39 @@ class CalendarCache {
   }
 
   /// Cache AstroInfo
-  void putAstroInfo(dynamic myanmarDate, AstroInfo astroInfo) {
+  void putAstroInfo(
+    MyanmarDate myanmarDate,
+    AstroInfo astroInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = _generateMyanmarDateKey(myanmarDate);
+    final key = _namespaceKey(_generateMyanmarDateKey(myanmarDate), namespace);
     _astroInfoCache.put(key, astroInfo);
   }
 
   /// Get cached HolidayInfo
-  HolidayInfo? getHolidayInfo(dynamic myanmarDate) {
+  HolidayInfo? getHolidayInfo(
+    MyanmarDate myanmarDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
     final key = _generateMyanmarDateKey(myanmarDate);
-    return getHolidayInfoByKey(key);
+    return getHolidayInfoByKey(key, namespace: namespace);
   }
 
   /// Get cached HolidayInfo by key
-  HolidayInfo? getHolidayInfoByKey(String key) {
+  HolidayInfo? getHolidayInfoByKey(String key, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final cached = _holidayInfoCache.get(key);
+    final namespacedKey = _namespaceKey(key, namespace);
+    final cached = _holidayInfoCache.get(namespacedKey);
 
     if (cached != null) {
       _hits++;
@@ -445,34 +582,49 @@ class CalendarCache {
   }
 
   /// Cache HolidayInfo
-  void putHolidayInfo(dynamic myanmarDate, HolidayInfo holidayInfo) {
+  void putHolidayInfo(
+    MyanmarDate myanmarDate,
+    HolidayInfo holidayInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
     final key = _generateMyanmarDateKey(myanmarDate);
-    putHolidayInfoByKey(key, holidayInfo);
+    putHolidayInfoByKey(key, holidayInfo, namespace: namespace);
   }
 
   /// Cache HolidayInfo by key
-  void putHolidayInfoByKey(String key, HolidayInfo holidayInfo) {
+  void putHolidayInfoByKey(
+    String key,
+    HolidayInfo holidayInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    _holidayInfoCache.put(key, holidayInfo);
+    _holidayInfoCache.put(_namespaceKey(key, namespace), holidayInfo);
   }
 
-  String _generateMyanmarDateKey(dynamic myanmarDate) {
-    if (myanmarDate is Map) {
-      return '${myanmarDate['year']}-${myanmarDate['month']}-${myanmarDate['day']}';
-    }
+  String _generateMyanmarDateKey(MyanmarDate myanmarDate) {
     return '${myanmarDate.year}-${myanmarDate.month}-${myanmarDate.day}';
   }
 
   String _generateCompleteDateKey(
     DateTime dateTime,
-    List<CustomHoliday>? customHolidays,
-  ) {
-    final dateKey = '${dateTime.year}-${dateTime.month}-${dateTime.day}';
+    List<CustomHoliday>? customHolidays, {
+    String namespace = '',
+  }) {
+    final dateKey = _namespaceKey(
+      dateTime.toUtc().microsecondsSinceEpoch.toString(),
+      namespace,
+    );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
 
-    final holidayIds = customHolidays.map((h) => h.id).toList()..sort();
-    return '$dateKey|${holidayIds.join(',')}';
+    final holidayDescriptors =
+        customHolidays.map((h) => h.cacheDescriptor).toList()..sort();
+    return '$dateKey|${holidayDescriptors.join(',')}';
+  }
+
+  String _namespaceKey(String key, String namespace) {
+    if (namespace == '') return key;
+    return '$namespace|$key';
   }
 
   // ============================================================================
@@ -483,6 +635,7 @@ class CalendarCache {
   void clearAll() {
     _completeDateCache.clear();
     _myanmarDateCache.clear();
+    _shanDateCache.clear();
     _westernDateCache.clear();
     _astroInfoCache.clear();
     _holidayInfoCache.clear();
@@ -496,6 +649,9 @@ class CalendarCache {
   /// Clear MyanmarDate cache only
   void clearMyanmarDateCache() => _myanmarDateCache.clear();
 
+  /// Clear ShanDate cache only
+  void clearShanDateCache() => _shanDateCache.clear();
+
   /// Clear WesternDate cache only
   void clearWesternDateCache() => _westernDateCache.clear();
 
@@ -507,7 +663,7 @@ class CalendarCache {
 
   /// Warm up cache with common dates
   void warmUp({
-    required dynamic service,
+    required CompleteDateResolver resolveCompleteDate,
     DateTime? startDate,
     DateTime? endDate,
   }) {
@@ -519,7 +675,7 @@ class CalendarCache {
 
     var currentDate = start;
     while (currentDate.isBefore(end) || currentDate.isAtSameMomentAs(end)) {
-      service.getCompleteDate(currentDate);
+      resolveCompleteDate(currentDate);
       currentDate = currentDate.add(const Duration(days: 1));
     }
   }
@@ -535,31 +691,24 @@ class CalendarCache {
     return _hits / total;
   }
 
-  /// Get statistics as map
+  /// Get typed cache statistics snapshot.
+  CalendarCacheStatistics getTypedStatistics() {
+    return CalendarCacheStatistics(
+      enabled: _config.enableCaching,
+      hits: _hits,
+      misses: _misses,
+      completeDate: _completeDateCache.getStats(),
+      myanmarDate: _myanmarDateCache.getStats(),
+      shanDate: _shanDateCache.getStats(),
+      westernDate: _westernDateCache.getStats(),
+      astroInfo: _astroInfoCache.getStats(),
+      holidayInfo: _holidayInfoCache.getStats(),
+    );
+  }
+
+  /// Legacy map-based statistics for backward compatibility.
   Map<String, dynamic> getStatistics() {
-    final total = _hits + _misses;
-    return {
-      'enabled': _config.enableCaching,
-      'hits': _hits,
-      'misses': _misses,
-      'total_requests': total,
-      'hit_rate_percent': total > 0
-          ? (hitRate * 100).toStringAsFixed(2)
-          : '0.00',
-      'caches': {
-        'complete_date': _completeDateCache.getStats(),
-        'myanmar_date': _myanmarDateCache.getStats(),
-        'western_date': _westernDateCache.getStats(),
-        'astro_info': _astroInfoCache.getStats(),
-        'holiday_info': _holidayInfoCache.getStats(),
-      },
-      'total_memory_entries':
-          _completeDateCache.size +
-          _myanmarDateCache.size +
-          _westernDateCache.size +
-          _astroInfoCache.size +
-          _holidayInfoCache.size,
-    };
+    return getTypedStatistics().toMap();
   }
 
   /// Reset statistics

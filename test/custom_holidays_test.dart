@@ -7,18 +7,17 @@ void main() {
 
     test('should add western date based custom holiday', () {
       // Define a custom holiday: "My Birthday" on Jan 15
-      final birthday = CustomHoliday(
+      final birthday = CustomHoliday.westernDate(
         id: 'my_birthday',
         name: 'My Birthday',
         type: HolidayType.other,
-        predicate: (myanmarDate, westernDate) {
-          return westernDate.month == 1 && westernDate.day == 15;
-        },
+        month: 1,
+        day: 15,
       );
 
       // Configure calendar with custom holiday
       MyanmarCalendar.configure(
-        customHolidays: [birthday],
+        customHolidayRules: [birthday],
       );
 
       // Check dates
@@ -33,18 +32,16 @@ void main() {
 
     test('should add myanmar date based custom holiday', () {
       // Define a custom holiday: "Special Event" on Kason 1 (Month 2)
-      final specialEvent = CustomHoliday(
+      final specialEvent = CustomHoliday.myanmarDate(
         id: 'special_event',
         name: 'Special Event',
         type: HolidayType.cultural,
-        predicate: (myanmarDate, westernDate) {
-          // Kason is month 2
-          return myanmarDate.month == 2 && myanmarDate.day == 1;
-        },
+        month: 2, // Kason
+        day: 1,
       );
 
       MyanmarCalendar.configure(
-        customHolidays: [specialEvent],
+        customHolidayRules: [specialEvent],
       );
 
       // Check dates (1385 Kason 1)
@@ -55,17 +52,16 @@ void main() {
 
     test('should coexist with standard holidays', () {
       // Add custom holiday on Independence Day (Jan 4)
-      final extraHoliday = CustomHoliday(
+      final extraHoliday = CustomHoliday.westernDate(
         id: 'extra_holiday',
         name: 'Extra Holiday',
         type: HolidayType.public,
-        predicate: (myanmarDate, westernDate) {
-          return westernDate.month == 1 && westernDate.day == 4;
-        },
+        month: 1,
+        day: 4,
       );
 
       MyanmarCalendar.configure(
-        customHolidays: [extraHoliday],
+        customHolidayRules: [extraHoliday],
       );
 
       final date = MyanmarCalendar.fromWestern(2024, 1, 4);
@@ -73,6 +69,32 @@ void main() {
       expect(date.publicHolidays, contains('Independence'));
       // Custom holiday also present
       expect(date.publicHolidays, contains('Extra Holiday'));
+    });
+
+    test('should localize custom holiday names by current language', () {
+      final localizedRule = CustomHoliday.westernDate(
+        id: 'new_moon_reflection_day',
+        name: 'New Moon Reflection Day',
+        type: HolidayType.cultural,
+        month: 1,
+        day: 11,
+        cacheVersion: 1,
+        localizedNames: const {
+          Language.myanmar: 'လကွယ်တရားထိုင်နေ့',
+        },
+      );
+
+      MyanmarCalendar.configure(
+        customHolidayRules: [localizedRule],
+        language: Language.english,
+      );
+
+      final english = MyanmarCalendar.fromWestern(2024, 1, 11);
+      expect(english.culturalHolidays, contains('New Moon Reflection Day'));
+
+      MyanmarCalendar.setLanguage(Language.myanmar);
+      final myanmar = MyanmarCalendar.fromWestern(2024, 1, 11);
+      expect(myanmar.culturalHolidays, contains('လကွယ်တရားထိုင်နေ့'));
     });
   });
 }

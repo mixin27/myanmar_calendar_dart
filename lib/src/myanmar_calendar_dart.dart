@@ -2,7 +2,6 @@ import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/core/myanmar_date_time.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
-import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
@@ -13,6 +12,8 @@ import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
+import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
+import 'package:myanmar_calendar_dart/src/myanmar_calendar_client.dart';
 import 'package:myanmar_calendar_dart/src/services/ai_prompt_service.dart';
 import 'package:myanmar_calendar_dart/src/services/chronicle_service.dart';
 import 'package:myanmar_calendar_dart/src/services/myanmar_calendar_service.dart';
@@ -74,20 +75,22 @@ class MyanmarCalendar {
   /// [sasanaYearType] - Sasana year calculation method (0, 1, or 2)
   /// [calendarType] - Calendar system (0=British, 1=Gregorian, 2=Julian)
   /// [gregorianStart] - Julian Day Number of Gregorian calendar start
-  /// [customHolidays] - List of custom holidays defined by the consumer
+  /// [customHolidayRules] - List of custom holiday rules defined by the consumer
   /// [disabledHolidays] - List of built-in holidays to disable globally
   /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
   /// [disabledHolidaysByDate] - Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
+  /// [westernHolidayProvider] - Provider for western-calendar holiday lookup rules
   static void configure({
     Language? language,
     double? timezoneOffset,
     int? sasanaYearType,
     int? calendarType,
     int? gregorianStart,
-    List<CustomHoliday>? customHolidays,
+    List<CustomHoliday>? customHolidayRules,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
+    WesternHolidayProvider? westernHolidayProvider,
   }) {
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
@@ -96,56 +99,75 @@ class MyanmarCalendar {
       sasanaYearType: sasanaYearType,
       calendarType: calendarType,
       gregorianStart: gregorianStart,
-      customHolidays: customHolidays,
+      customHolidayRules: customHolidayRules,
       disabledHolidays: disabledHolidays,
       disabledHolidaysByYear: disabledHolidaysByYear,
       disabledHolidaysByDate: disabledHolidaysByDate,
+      westernHolidayProvider: westernHolidayProvider,
     );
 
     // Reset service to pick up new configuration
     _service = null;
+    _chronicles = null;
+    MyanmarDateTime.clearSharedInstances();
 
     // Clear holiday cache to ensure new custom holidays are picked up
     cache
       ..clearHolidayInfoCache()
       ..clearCompleteDateCache();
-
-    // Update translation service language
-    if (language != null) {
-      TranslationService.setLanguage(language);
-    }
   }
 
-  /// Add a custom holiday to the configuration
-  static void addCustomHoliday(CustomHoliday holiday) {
+  /// Add one custom holiday rule to the configuration.
+  static void addCustomHolidayRule(CustomHoliday rule) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: [...CalendarConfig.global.customHolidays, holiday],
+      customHolidayRules: [...CalendarConfig.global.customHolidayRules, rule],
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
-  /// Add multiple custom holidays to the configuration
-  static void addCustomHolidays(List<CustomHoliday> holidays) {
+  /// Add multiple custom holiday rules to the configuration.
+  static void addCustomHolidayRules(List<CustomHoliday> rules) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: [...CalendarConfig.global.customHolidays, ...holidays],
+      customHolidayRules: [
+        ...CalendarConfig.global.customHolidayRules,
+        ...rules,
+      ],
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
-  /// Remove a custom holiday from the configuration
-  static void removeCustomHoliday(CustomHoliday holiday) {
+  /// Remove a custom holiday rule by [id].
+  static void removeCustomHolidayRuleById(String id) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: CalendarConfig.global.customHolidays
-          .where((h) => h.id != holiday.id)
+      customHolidayRules: CalendarConfig.global.customHolidayRules
+          .where((h) => h.id != id)
           .toList(),
     );
-    cache.clearHolidayInfoCache();
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
-  /// Remove all custom holidays from the configuration
-  static void clearCustomHolidays() {
-    CalendarConfig.global = CalendarConfig.global.copyWith(customHolidays: []);
-    cache.clearHolidayInfoCache();
+  /// Remove all custom holiday rules from the configuration.
+  static void clearCustomHolidayRules() {
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      customHolidayRules: [],
+    );
+    _service = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Get current configuration
@@ -162,10 +184,26 @@ class MyanmarCalendar {
   static void configureCache(CacheConfig cacheConfig) {
     CalendarCache.configureGlobal(cacheConfig);
     _service = null; // Reset service to use new cache
+    MyanmarDateTime.clearSharedInstances();
   }
 
   /// Get global cache instance
   static CalendarCache get cache => CalendarCache.global();
+
+  /// Create an instance-first client with isolated runtime state.
+  ///
+  /// This is recommended for server-side, multi-tenant, and test-heavy usage.
+  static MyanmarCalendarClient createClient({
+    CalendarConfig? config,
+    CacheConfig cacheConfig = const CacheConfig(),
+    bool useGlobalCache = false,
+  }) {
+    return MyanmarCalendarClient(
+      config: config ?? CalendarConfig.global,
+      cacheConfig: cacheConfig,
+      useGlobalCache: useGlobalCache,
+    );
+  }
 
   /// Clear all caches
   static void clearCache() {
@@ -177,12 +215,17 @@ class MyanmarCalendar {
     return cache.getStatistics();
   }
 
+  /// Get typed global cache statistics.
+  static CalendarCacheStatistics getTypedCacheStatistics() {
+    return cache.getTypedStatistics();
+  }
+
   /// Warm up global cache
   static void warmUpCache({DateTime? startDate, DateTime? endDate}) {
     cache.warmUp(
       startDate: startDate,
       endDate: endDate,
-      service: _serviceInstance,
+      resolveCompleteDate: _serviceInstance.getCompleteDate,
     );
   }
 
@@ -366,8 +409,8 @@ class MyanmarCalendar {
   /// print('Moon phase: ${complete.moonPhase}');
   /// print('Astrological days: ${complete.astrologicalDays}');
   /// ```
-  static CompleteDate getCompleteDate(DateTime dateTime) {
-    return _serviceInstance.getCompleteDate(dateTime);
+  static CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
+    return _serviceInstance.getCompleteDate(dateTime, language: language);
   }
 
   /// Generate a structured AI prompt for a date
@@ -404,8 +447,8 @@ class MyanmarCalendar {
   ///
   /// Returns [HolidayInfo] containing public, religious, and cultural
   /// holidays for the given Myanmar date.
-  static HolidayInfo getHolidayInfo(MyanmarDate date) {
-    return _serviceInstance.getHolidayInfo(date);
+  static HolidayInfo getHolidayInfo(MyanmarDate date, {Language? language}) {
+    return _serviceInstance.getHolidayInfo(date, language: language);
   }
 
   /// Check if a Myanmar year is a watat year
@@ -445,8 +488,16 @@ class MyanmarCalendar {
   }
 
   /// Find auspicious days for a given Myanmar month and year
-  static List<CompleteDate> findAuspiciousDays(int year, int month) {
-    return _serviceInstance.findAuspiciousDays(year, month);
+  static List<CompleteDate> findAuspiciousDays(
+    int year,
+    int month, {
+    Language? language,
+  }) {
+    return _serviceInstance.findAuspiciousDays(
+      year,
+      month,
+      language: language,
+    );
   }
 
   /// Get description for Nakhat type
@@ -580,11 +631,10 @@ class MyanmarCalendar {
     return date.addDays(days);
   }
 
-  /// Add months to a Myanmar date (approximate)
+  /// Add months to a Myanmar date.
   ///
-  /// Returns a new [MyanmarDateTime] with approximately the specified
-  /// number of months added. This is an approximation due to varying
-  /// month lengths in the Myanmar calendar.
+  /// Returns a new [MyanmarDateTime] by following deterministic Myanmar month
+  /// transitions and clamping day-of-month where needed.
   static MyanmarDateTime addMonths(MyanmarDateTime date, int months) {
     final myanmarDate = CalendarUtils.addMonthsToMyanmarDate(
       date.myanmarDate,
@@ -637,11 +687,20 @@ class MyanmarCalendar {
   /// MyanmarCalendar.setLanguage(Language.myanmar);
   /// ```
   static void setLanguage(Language language) {
-    _serviceInstance.setLanguage(language);
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      defaultLanguage: language.code,
+    );
+    _service = null;
+    _chronicles = null;
+    MyanmarDateTime.clearSharedInstances();
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
-  /// Get the current language
-  static Language get currentLanguage => _serviceInstance.currentLanguage;
+  /// Get the configured default language.
+  static Language get currentLanguage =>
+      Language.fromCode(config.defaultLanguage);
 
   /// Get all supported languages
   static List<Language> get supportedLanguages => Language.values;
@@ -724,8 +783,14 @@ class MyanmarCalendar {
   ///
   /// Returns a list of [CompleteDate] objects for the given dates.
   /// Efficient for bulk processing of date information.
-  static List<CompleteDate> getCompleteDates(List<DateTime> dates) {
-    return CalendarUtils.getCompleteDatesForWesternDates(dates);
+  static List<CompleteDate> getCompleteDates(
+    List<DateTime> dates, {
+    Language? language,
+  }) {
+    return CalendarUtils.getCompleteDatesForWesternDates(
+      dates,
+      language: language,
+    );
   }
 
   // ============================================================================
@@ -764,8 +829,10 @@ class MyanmarCalendar {
   /// Useful for testing or clearing custom configurations.
   static void reset() {
     CalendarConfig.global = const CalendarConfig();
+    _chronicles = null;
     _service = null;
-    TranslationService.setLanguage(Language.english);
+    MyanmarDateTime.clearSharedInstances();
+    cache.clearAll();
   }
 
   /// Get chronicles for [DateTime]

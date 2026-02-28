@@ -1,3 +1,53 @@
+## 2.0.0
+
+- Refactor package documentation for Dart-only usage
+- Replace CI runtime with pure Dart commands and add `dart test` gate
+- Improve cache system:
+  - O(1) LRU bookkeeping with `LinkedHashMap`
+  - cache namespace isolation by configuration
+  - language-aware complete-date/holiday cache entries
+  - fix `clearAll()` to clear Shan-date cache entries
+- Harden date validation for invalid Western month/day combinations
+- Fix Sasana year calculation for `sasanaYearType=1` on late months
+- Add pluggable `WesternHolidayProvider` and table-driven default rules
+- Refactor custom holiday system:
+  - add typed `CustomHolidayContext` matcher API
+  - add `CustomHoliday.westernDate` and `CustomHoliday.myanmarDate` builders
+  - add localized custom holiday names via `localizedNames`
+  - remove legacy `predicate`-based API in favor of matcher/context
+  - remove `CustomHoliday.legacy(...)`
+  - keep rule-oriented management APIs based on `customHolidayRules`
+- Add instance-first API:
+  - add `MyanmarCalendarClient` for isolated runtime/config/cache usage
+  - add `MyanmarCalendar.createClient(...)`
+- Add typed Myanmar-year metadata API:
+  - add `MyanmarYearInfo`
+  - add `DateConverter.getMyanmarYearInfo(...)`
+  - remove map-based `DateConverter.getYearInfo(...)`
+- Remove deprecated aliases:
+  - remove `MyanmarCalendar.addCustomHoliday(...)`
+  - remove `MyanmarCalendar.addCustomHolidays(...)`
+  - remove `MyanmarCalendar.removeCustomHoliday(...)`
+  - remove `MyanmarCalendar.clearCustomHolidays(...)`
+  - remove `customHolidays` alias parameter from `MyanmarCalendar.configure(...)`
+  - remove `customHolidays` alias parameter from `CalendarConfig.copyWith(...)`
+- Remove deprecated translation/service legacy methods:
+  - remove `TranslationService.currentLanguage`
+  - remove `TranslationService.setLanguage(...)`
+  - remove `TranslationService.translate(...)`
+  - remove `MyanmarCalendarService.setLanguage(...)`
+  - remove `MyanmarCalendarService.currentLanguage`
+- Make `HolidayInfo` and `AstroInfo` list fields immutable
+- Improve `CompleteDate` model consistency:
+  - include Shan date in equality/hashCode
+  - include `monthType` in serialized Myanmar map
+  - accept integer JDN values in `fromMap`
+- Fix publish workflow tag trigger pattern
+- Tighten public API surface by removing internal service/utils exports
+- Add JS parity regression fixtures against `reference/ceMmDateTime.js`
+- Add regression tests for cache isolation, localization cache behavior,
+  invalid dates, and model immutability
+
 ## 1.1.5
 
 - Add `disabledHolidaysByDate` config
@@ -39,10 +89,8 @@
 - **Complete Myanmar Calendar System**: Full support for Myanmar calendar with accurate date conversions
 - **Astrological Calculations**: Buddhist era, sabbath days, moon phases, yatyaza, pyathada, and more
 - **Multi-language Support**: Myanmar, English, Mon, Shan, Karen, and Zawgyi scripts
-- **Beautiful UI Components**: Pre-built calendar widgets and date pickers
 - **Holiday Support**: Myanmar public holidays, religious days, and cultural events
-- **Highly Configurable**: Customizable themes, date formats, and display options
-- **Responsive Design**: Works perfectly on mobile, tablet, and desktop
+- **Highly Configurable**: Calendar system, timezone, language, and holiday settings
 - **Date Arithmetic**: Easy date calculations and manipulations
 - **Type Safe**: Full null safety support with comprehensive error handling
 - **Custom Exceptions**: Detailed error messages with recovery suggestions

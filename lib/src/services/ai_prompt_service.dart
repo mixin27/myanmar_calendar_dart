@@ -24,7 +24,7 @@ class AIPromptService {
     Language? language,
     AIPromptType type = AIPromptType.horoscope,
   }) {
-    final lang = language ?? TranslationService.currentLanguage;
+    final lang = language ?? Language.english;
     final buffer = StringBuffer();
 
     // Introduction

@@ -245,19 +245,33 @@ class MyanmarDateTime {
   static final AstroCalculator _sharedAstroCalculator = AstroCalculator(
     cache: CalendarCache.global(),
   );
+  static final FormatService _sharedFormatService = FormatService();
+
+  /// Clear shared converters and holiday calculators.
+  ///
+  /// This is used when global configuration is updated so future instances
+  /// are created with the latest configuration object.
+  static void clearSharedInstances() {
+    _converters.clear();
+    _holidayCalculators.clear();
+  }
 
   /// Get or create a shared converter for the given config
   static DateConverter _getConverter(CalendarConfig config) {
-    final key = config.hashCode.toString();
+    final key = config.cacheNamespace;
     return _converters.putIfAbsent(
       key,
-      () => DateConverter(config, cache: CalendarCache.global()),
+      () => DateConverter(
+        config,
+        cache: CalendarCache.global(),
+        cacheNamespace: 'date_converter|$key',
+      ),
     );
   }
 
   /// Get or create a shared holiday calculator for the given config
   static HolidayCalculator _getHolidayCalculator(CalendarConfig config) {
-    final key = config.hashCode.toString();
+    final key = config.cacheNamespace;
     return _holidayCalculators.putIfAbsent(
       key,
       () => HolidayCalculator(cache: CalendarCache.global(), config: config),
@@ -394,7 +408,8 @@ class MyanmarDateTime {
   HolidayInfo get holidayInfo {
     _holidayInfo ??= _holidayCalculator.getHolidays(
       myanmarDate,
-      customHolidays: config.customHolidays,
+      customHolidays: config.customHolidayRules,
+      language: Language.fromCode(config.defaultLanguage),
     );
     return _holidayInfo!;
   }
@@ -730,21 +745,23 @@ class MyanmarDateTime {
 
   /// Format Myanmar date with pattern
   String formatMyanmar([String? pattern, Language? language]) {
-    final formatService = FormatService();
-    return formatService.formatMyanmarDate(
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
+    return _sharedFormatService.formatMyanmarDate(
       myanmarDate,
       pattern: pattern,
-      language: language,
+      language: currentLanguage,
     );
   }
 
   /// Format Western date with pattern
   String formatWestern([String? pattern, Language? language]) {
-    final formatService = FormatService();
-    return formatService.formatWesternDate(
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
+    return _sharedFormatService.formatWesternDate(
       westernDate,
       pattern: pattern,
-      language: language,
+      language: currentLanguage,
     );
   }
 
@@ -756,12 +773,13 @@ class MyanmarDateTime {
     bool includeAstro = false,
     bool includeHolidays = false,
   }) {
-    final formatService = FormatService();
-    return formatService.formatCompleteDate(
+    final currentLanguage =
+        language ?? Language.fromCode(config.defaultLanguage);
+    return _sharedFormatService.formatCompleteDate(
       completeDate,
       myanmarPattern: myanmarPattern,
       westernPattern: westernPattern,
-      language: language,
+      language: currentLanguage,
       includeAstro: includeAstro,
       includeHolidays: includeHolidays,
     );

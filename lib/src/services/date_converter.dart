@@ -1,24 +1,23 @@
 /// ------------------------------------------------------------
 /// Myanmar Calendar Calculation Core
 ///
-/// Based on original algorithms by: [Dr Yan Naing Aye]
-/// Source: https://github.com/yan9a/mmcal
-/// Language: [Original Language, JavaScript, CPP]
-/// License: [License type, MIT]
+/// Ported from the original Myanmar calendar implementation by Dr Yan Naing Aye.
+/// Source: https://github.com/yan9a/mmcal (MIT License)
 ///
-/// Dart/Flutter conversion and adaptations by: Kyaw Zayar Tun
+/// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
 ///
 /// Notes:
 /// - The core algorithm originates from the above source.
 /// - This implementation is a re-creation in Dart, with
-///   modifications and optimizations for Flutter usage.
+///   modifications and optimizations for Dart package usage.
 /// ------------------------------------------------------------
 library;
 
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
+import 'package:myanmar_calendar_dart/src/models/myanmar_year_info.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_constants.dart';
 import 'package:myanmar_calendar_dart/src/utils/myanmar_year_constants.dart';
@@ -27,9 +26,16 @@ import 'package:myanmar_calendar_dart/src/utils/package_constants.dart';
 /// Date converter core
 class DateConverter {
   /// Create a new date converter
-  DateConverter(this._config, {required CalendarCache cache}) : _cache = cache;
+  DateConverter(
+    this._config, {
+    required CalendarCache cache,
+    String? cacheNamespace,
+  }) : _cache = cache,
+       _cacheNamespace =
+           cacheNamespace ?? 'date_converter|${_config.cacheNamespace}';
   final CalendarConfig _config;
   final CalendarCache _cache;
+  final String _cacheNamespace;
 
   /// Get current calendar config.
   CalendarConfig get config => _config;
@@ -143,7 +149,10 @@ class DateConverter {
   /// Convert Julian Day Number to Western date
   WesternDate julianToWestern(double julianDayNumber) {
     // Try to get from cache
-    final cached = _cache.getWesternDate(julianDayNumber);
+    final cached = _cache.getWesternDate(
+      julianDayNumber,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
@@ -155,7 +164,11 @@ class DateConverter {
     );
 
     // Store in cache
-    _cache.putWesternDate(julianDayNumber, westernDate);
+    _cache.putWesternDate(
+      julianDayNumber,
+      westernDate,
+      namespace: _cacheNamespace,
+    );
 
     return westernDate;
   }
@@ -304,7 +317,10 @@ class DateConverter {
   /// Convert Julian Day Number to Myanmar date
   MyanmarDate julianToMyanmar(double julianDayNumber) {
     // Try to get from cache
-    final cached = _cache.getMyanmarDate(julianDayNumber);
+    final cached = _cache.getMyanmarDate(
+      julianDayNumber,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
@@ -316,7 +332,11 @@ class DateConverter {
     );
 
     // Store in cache
-    _cache.putMyanmarDate(julianDayNumber, myanmarDate);
+    _cache.putMyanmarDate(
+      julianDayNumber,
+      myanmarDate,
+      namespace: _cacheNamespace,
+    );
 
     return myanmarDate;
   }
@@ -365,12 +385,14 @@ class DateConverter {
     final fortnightDay = monthDay - 15 * (monthDay ~/ 16);
     final weekDay = (jdn + 2) % 7;
 
-    // Calculate Sasana year
-    final sasanaYear = _calculateSasanaYear(myYear, mmonth, monthDay);
+    final fullMonth = mmonth + 12 * monthType;
+
+    // Calculate Sasana year using full month numbering (includes late months).
+    final sasanaYear = _calculateSasanaYear(myYear, fullMonth, monthDay);
 
     return MyanmarDate(
       year: myYear,
-      month: mmonth + 12 * monthType, // Restore full month number
+      month: fullMonth,
       day: monthDay,
       yearType: yearInfo['myt']!.toInt(),
       moonPhase: moonPhase,
@@ -492,10 +514,14 @@ class DateConverter {
     switch (_config.sasanaYearType) {
       case 1:
         if (month >= 13) offset = CalendarConstants.buddhistEraOffset + 1;
+        break;
       case 2:
         if (month == 1 || (month == 2 && day < 15)) {
           offset = CalendarConstants.buddhistEraOffset - 1;
         }
+        break;
+      default:
+        break;
     }
 
     return myanmarYear + offset;
@@ -525,7 +551,12 @@ class DateConverter {
     if (month < 1 || month > 12) {
       throw ArgumentError('Invalid Western month: $month');
     }
-    if (day < 1 || day > 31) throw ArgumentError('Invalid Western day: $day');
+    final maxDay = _getDaysInWesternMonth(year, month);
+    if (day < 1 || day > maxDay) {
+      throw ArgumentError(
+        'Invalid Western day: $day for year $year month $month',
+      );
+    }
     if (hour < 0 || hour > 23) throw ArgumentError('Invalid hour: $hour');
     if (minute < 0 || minute > 59) {
       throw ArgumentError('Invalid minute: $minute');
@@ -533,6 +564,35 @@ class DateConverter {
     if (second < 0 || second > 59) {
       throw ArgumentError('Invalid second: $second');
     }
+  }
+
+  int _getDaysInWesternMonth(int year, int month) {
+    switch (month) {
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        return 31;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        return 30;
+      case 2:
+        return _isWesternLeapYear(year) ? 29 : 28;
+      default:
+        return 0;
+    }
+  }
+
+  bool _isWesternLeapYear(int year) {
+    if (_config.calendarType == CalendarConstants.calendarTypeJulian) {
+      return year % 4 == 0;
+    }
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
   }
 
   /// Validate Myanmar date
@@ -593,16 +653,16 @@ class DateConverter {
     return yearInfo['tg1']!;
   }
 
-  /// Get complete year information
-  Map<String, dynamic> getYearInfo(int myanmarYear) {
+  /// Get complete typed year information.
+  MyanmarYearInfo getMyanmarYearInfo(int myanmarYear) {
     final yearInfo = _getMyanmarYearInfo(myanmarYear);
 
-    return {
-      'year': myanmarYear,
-      'yearType': yearInfo['myt']!.toInt(),
-      'isWatat': yearInfo['myt']! > 0,
-      'firstDayJdn': yearInfo['tg1']!.toInt(),
-      'fullMoonJdn': yearInfo['fm']!.toInt(),
-    };
+    return MyanmarYearInfo(
+      year: myanmarYear,
+      yearType: yearInfo['myt']!.toInt(),
+      isWatat: yearInfo['myt']! > 0,
+      firstDayJdn: yearInfo['tg1']!.toInt(),
+      fullMoonJdn: yearInfo['fm']!.toInt(),
+    );
   }
 }

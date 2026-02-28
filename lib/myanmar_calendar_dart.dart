@@ -1,11 +1,11 @@
 /// Myanmar Calendar Package
 ///
-/// A comprehensive Flutter package for Myanmar calendar with date conversions,
+/// A comprehensive Dart package for Myanmar calendar with date conversions,
 /// astrological calculations, holiday information, and multi-language support.
 ///
 /// Author: Kyaw Zayar Tun
 /// Website: https://www.kyawzayartun.com
-/// GitHub:  https://github.com/mixin27/flutter-mmcalendar
+/// GitHub:  https://github.com/mixin27/myanmar_calendar_dart
 /// License: MIT
 ///
 /// ## Features
@@ -15,7 +15,7 @@
 /// - **Holiday Calculations**: Myanmar holidays, religious days, cultural celebrations
 /// - **Multi-language Support**: Myanmar (Unicode), Myanmar (Zawgyi), Mon, Shan, Karen, English
 /// - **Formatting Services**: Flexible date formatting with localization
-/// - **UI Widgets**: Ready-to-use calendar widgets and date pickers
+/// - **Chronicle Data**: Historical chronicle and dynasty lookup support
 /// - **Validation**: Comprehensive date validation with detailed error messages
 /// - **Utilities**: Helper functions for date calculations and manipulations
 ///
@@ -58,25 +58,13 @@ export 'src/models/custom_holiday.dart';
 export 'src/models/holiday_id.dart';
 export 'src/models/holiday_info.dart';
 export 'src/models/myanmar_date.dart';
+export 'src/models/myanmar_year_info.dart';
 export 'src/models/shan_date.dart';
 export 'src/models/validation_result.dart';
 export 'src/models/western_date.dart';
+export 'src/models/western_holiday_provider.dart';
 // Public API
+export 'src/myanmar_calendar_client.dart';
 export 'src/myanmar_calendar_dart.dart';
 // Services
 export 'src/services/ai_prompt_service.dart';
-export 'src/services/astro_calculator.dart';
-export 'src/services/chronicle_service.dart';
-export 'src/services/date_converter.dart';
-export 'src/services/format_service.dart';
-export 'src/services/holiday_calculator.dart';
-export 'src/services/myanmar_calendar_service.dart';
-// Utils
-export 'src/utils/astro_details.dart';
-export 'src/utils/calendar_constants.dart';
-export 'src/utils/calendar_utils.dart';
-export 'src/utils/chronicles_constants.dart';
-export 'src/utils/date_extension.dart';
-export 'src/utils/myanmar_year_constants.dart';
-export 'src/utils/package_constants.dart';
-export 'src/utils/shan_calendar_constants.dart';

@@ -1,23 +1,22 @@
 /// ------------------------------------------------------------
 /// Holiday Calculation Core
 ///
-/// Based on original algorithms by: [Dr Yan Naing Aye]
-/// Source: https://github.com/yan9a/mmcal
-/// Language: [Original Language, e.g. CPP/JavaScript]
-/// License: [License type, MIT]
+/// Ported from the original Myanmar calendar implementation by Dr Yan Naing Aye.
+/// Source: https://github.com/yan9a/mmcal (MIT License)
 ///
-/// Dart/Flutter conversion and adaptations by: Kyaw Zayar Tun
+/// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
 ///
 /// Notes:
 /// - The core algorithm originates from the above source.
 /// - This implementation is a re-creation in Dart, with
-///   modifications and optimizations for Flutter usage.
+///   modifications and optimizations for Dart package usage.
 /// ------------------------------------------------------------
 library;
 
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
+import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
@@ -33,28 +32,45 @@ class HolidayCalculator {
     required CalendarCache cache,
     CalendarConfig config = const CalendarConfig(),
   }) : _cache = cache,
-       _config = config;
+       _config = config,
+       _defaultLanguage = Language.fromCode(config.defaultLanguage),
+       _cacheNamespace = 'holiday_info|${config.cacheNamespace}';
   late final CalendarCache _cache;
   final CalendarConfig _config;
+  final Language _defaultLanguage;
+  final String _cacheNamespace;
 
   /// Get all holidays for a Myanmar date
   HolidayInfo getHolidays(
     MyanmarDate date, {
     List<CustomHoliday> customHolidays = const [],
+    Language? language,
   }) {
-    final key = _generateCacheKey(date, customHolidays);
+    final currentLanguage = language ?? _defaultLanguage;
+    final key = _generateCacheKey(date, customHolidays, currentLanguage);
 
     // Try to get from cache
-    final cached = _cache.getHolidayInfoByKey(key);
+    final cached = _cache.getHolidayInfoByKey(
+      key,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
 
     // Calculate if not in cache
-    final holidayInfo = _calculateHolidays(date, customHolidays);
+    final holidayInfo = _calculateHolidays(
+      date,
+      customHolidays,
+      currentLanguage,
+    );
 
     // Store in cache
-    _cache.putHolidayInfoByKey(key, holidayInfo);
+    _cache.putHolidayInfoByKey(
+      key,
+      holidayInfo,
+      namespace: _cacheNamespace,
+    );
 
     return holidayInfo;
   }
@@ -62,6 +78,7 @@ class HolidayCalculator {
   String _generateCacheKey(
     MyanmarDate date,
     List<CustomHoliday> customHolidays,
+    Language language,
   ) {
     final dateKey = '${date.year}-${date.month}-${date.day}';
 
@@ -92,14 +109,21 @@ class HolidayCalculator {
               []
           ..sort();
 
-    final customHolidayIds = customHolidays.map((h) => h.id).toList()..sort();
+    final customHolidayFingerprints = customHolidays.map((holiday) {
+      return holiday.cacheDescriptor;
+    }).toList()..sort();
 
-    return '$dateKey|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayIds.join(',')}';
+    return '$dateKey|lang:${language.code}|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayFingerprints.join(',')}';
+  }
+
+  String _t(String key, Language language) {
+    return TranslationService.translateTo(key, language);
   }
 
   HolidayInfo _calculateHolidays(
     MyanmarDate date,
     List<CustomHoliday> customHolidays,
+    Language language,
   ) {
     final publicHolidays = <String>[];
     final religiousHolidays = <String>[];
@@ -119,6 +143,7 @@ class HolidayCalculator {
       publicHolidays,
       religiousHolidays,
       culturalHolidays,
+      language,
     );
 
     // Western calendar based holidays
@@ -127,6 +152,7 @@ class HolidayCalculator {
       publicHolidays,
       religiousHolidays,
       culturalHolidays,
+      language,
     );
 
     // Thingyan holidays (Myanmar New Year)
@@ -135,20 +161,22 @@ class HolidayCalculator {
       westernDate,
       publicHolidays,
       culturalHolidays,
+      language,
     );
 
     // Other holidays
-    _addOtherHolidays(westernDate, otherHolidays);
+    _addOtherHolidays(westernDate, otherHolidays, language);
 
     // Myanmar anniversary days
     _addMyanmarAnniversaryDays(
       date,
       westernDate,
       myanmarAnniversaryDays,
+      language,
     );
 
     // Other anniversary days
-    _addOtherAnniversaryDays(westernDate, otherAnniversaryDays);
+    _addOtherAnniversaryDays(westernDate, otherAnniversaryDays, language);
 
     // Custom holidays
     _addCustomHolidays(
@@ -162,6 +190,7 @@ class HolidayCalculator {
       otherHolidays,
       myanmarAnniversaryDays,
       otherAnniversaryDays,
+      language,
     );
 
     return HolidayInfo(
@@ -199,6 +228,7 @@ class HolidayCalculator {
     List<String> publicHolidays,
     List<String> religiousHolidays,
     List<String> culturalHolidays,
+    Language language,
   ) {
     final westernYear = westernDate['year']!;
     final westernMonth = westernDate['month']!;
@@ -208,7 +238,7 @@ class HolidayCalculator {
     if (date.month == CalendarConstants.monthKason &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
         !_isDisabled(HolidayId.buddha, westernYear, westernMonth, westernDay)) {
-      religiousHolidays.add(TranslationService.translate('Buddha'));
+      religiousHolidays.add(_t('Buddha', language));
     }
 
     // Start of Buddhist Lent - Waso full moon
@@ -221,7 +251,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       religiousHolidays.add(
-        TranslationService.translate('Start of Buddhist Lent'),
+        _t('Start of Buddhist Lent', language),
       );
     }
 
@@ -235,7 +265,7 @@ class HolidayCalculator {
         westernDay,
       )) {
         religiousHolidays.add(
-          TranslationService.translate('End of Buddhist Lent'),
+          _t('End of Buddhist Lent', language),
         );
       }
       if (!_isDisabled(
@@ -244,7 +274,7 @@ class HolidayCalculator {
         westernMonth,
         westernDay,
       )) {
-        publicHolidays.add(TranslationService.translate('Holiday'));
+        publicHolidays.add(_t('Holiday', language));
       }
     }
 
@@ -257,7 +287,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      publicHolidays.add(TranslationService.translate('Holiday'));
+      publicHolidays.add(_t('Holiday', language));
     }
 
     // Tazaungdaing Festival - Tazaungmon full moon
@@ -269,7 +299,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      religiousHolidays.add(TranslationService.translate('Tazaungdaing'));
+      religiousHolidays.add(_t('Tazaungdaing', language));
     }
 
     if (date.year >= 1379 &&
@@ -281,7 +311,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      culturalHolidays.add(TranslationService.translate('Holiday'));
+      culturalHolidays.add(_t('Holiday', language));
     }
 
     // National Day - Tazaungmon waning 10
@@ -295,7 +325,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      publicHolidays.add(TranslationService.translate('National Day'));
+      publicHolidays.add(_t('National Day', language));
     }
 
     // Karen New Year - Pyatho 1
@@ -308,7 +338,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       culturalHolidays.add(
-        '${TranslationService.translate('Karen')} ${TranslationService.translate("New Year's")}',
+        '${_t('Karen', language)} ${_t("New Year's", language)}',
       );
     }
 
@@ -322,7 +352,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       culturalHolidays.add(
-        '${TranslationService.translate('Tabaung')} ${TranslationService.translate('Pwe')}',
+        '${_t('Tabaung', language)} ${_t('Pwe', language)}',
       );
     }
   }
@@ -332,6 +362,7 @@ class HolidayCalculator {
     MyanmarDate date,
     Map<String, int> westernDate,
     List<String> items,
+    Language language,
   ) {
     final westernYear = westernDate['year']!;
     final westernMonth = westernDate['month']!;
@@ -346,7 +377,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      items.add(TranslationService.translate('Mahathamaya'));
+      items.add(_t('Mahathamaya', language));
     }
 
     // Garudhamma Day - Tawthalin full moon
@@ -358,7 +389,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      items.add(TranslationService.translate('Garudhamma'));
+      items.add(_t('Garudhamma', language));
     }
 
     // Mothers' Day - Pyatho full moon (since 1998 CE / 1360 ME)
@@ -371,7 +402,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      items.add(TranslationService.translate('Mothers'));
+      items.add(_t('Mothers', language));
     }
 
     // Fathers' Day - Tabaung full moon (since 2008 CE / 1370 ME)
@@ -384,7 +415,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      items.add(TranslationService.translate('Fathers'));
+      items.add(_t('Fathers', language));
     }
 
     // Metta Day - Wagaung full moon
@@ -396,7 +427,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      items.add(TranslationService.translate('Metta'));
+      items.add(_t('Metta', language));
     }
 
     // Taungpyone Pwe - Wagaung 10
@@ -409,7 +440,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       items.add(
-        '${TranslationService.translate('Taungpyone')} ${TranslationService.translate('Pwe')}',
+        '${_t('Taungpyone', language)} ${_t('Pwe', language)}',
       );
     }
 
@@ -423,7 +454,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       items.add(
-        '${TranslationService.translate('Yadanagu')} ${TranslationService.translate('Pwe')}',
+        '${_t('Yadanagu', language)} ${_t('Pwe', language)}',
       );
     }
 
@@ -438,7 +469,7 @@ class HolidayCalculator {
           westernDay,
         )) {
       items.add(
-        '${TranslationService.translate('Mon')} ${TranslationService.translate('National')}',
+        '${_t('Mon', language)} ${_t('National', language)}',
       );
     }
 
@@ -450,8 +481,8 @@ class HolidayCalculator {
         westernMonth,
         westernDay,
       )) {
-        final shan = TranslationService.translate('Shan');
-        final newYear = TranslationService.translate("New Year's");
+        final shan = _t('Shan', language);
+        final newYear = _t("New Year's", language);
         items.add('$shan $newYear');
       }
 
@@ -462,7 +493,7 @@ class HolidayCalculator {
             westernMonth,
             westernDay,
           )) {
-        items.add(TranslationService.translate('Authors'));
+        items.add(_t('Authors', language));
       }
     }
   }
@@ -471,6 +502,7 @@ class HolidayCalculator {
   void _addOtherAnniversaryDays(
     Map<String, int> westernDate,
     List<String> items,
+    Language language,
   ) {
     final year = westernDate['year']!;
     final month = westernDate['month']!;
@@ -481,74 +513,74 @@ class HolidayCalculator {
         month == 2 &&
         day == 13 &&
         !_isDisabled(HolidayId.aungSanBirthday, year, month, day)) {
-      items.add(TranslationService.translate('G. Aung San BD'));
+      items.add(_t('G. Aung San BD', language));
     }
 
     // Valentines Day
     if ((year >= 1969) &&
         (month == 2 && day == 14) &&
         !_isDisabled(HolidayId.valentinesDay, year, month, day)) {
-      items.add(TranslationService.translate('Valentines'));
+      items.add(_t('Valentines', language));
     }
 
     // Earth Day
     if ((year >= 1970) &&
         (month == 4 && day == 22) &&
         !_isDisabled(HolidayId.earthDay, year, month, day)) {
-      items.add(TranslationService.translate('Earth'));
+      items.add(_t('Earth', language));
     }
 
     // April Fools'
     if ((year >= 1392) &&
         (month == 4 && day == 1) &&
         !_isDisabled(HolidayId.aprilFoolsDay, year, month, day)) {
-      items.add(TranslationService.translate("April Fools'"));
+      items.add(_t("April Fools'", language));
     }
 
     // Red cross
     if ((year >= 1948) &&
         (month == 5 && day == 8) &&
         !_isDisabled(HolidayId.redCrossDay, year, month, day)) {
-      items.add(TranslationService.translate('Red Cross'));
+      items.add(_t('Red Cross', language));
     }
 
     // World Teachers'
     if ((year >= 1994) &&
         (month == 10 && day == 5) &&
         !_isDisabled(HolidayId.worldTeachersDay, year, month, day)) {
-      items.add(TranslationService.translate("World Teachers'"));
+      items.add(_t("World Teachers'", language));
     }
 
     // UN Day
     if ((year >= 1947) &&
         (month == 10 && day == 24) &&
         !_isDisabled(HolidayId.unitedNationsDay, year, month, day)) {
-      items.add(TranslationService.translate('United Nations'));
+      items.add(_t('United Nations', language));
     }
 
     // Halloween
     if ((year >= 1753) &&
         (month == 10 && day == 31) &&
         !_isDisabled(HolidayId.halloween, year, month, day)) {
-      items.add(TranslationService.translate('Halloween'));
+      items.add(_t('Halloween', language));
     }
 
-    // Eid al-Fitr (approximate calculation)
-    if (_isEidAlFitr(year, month, day) &&
+    // Eid al-Fitr (provider-based lookup)
+    if (_matchesWesternHoliday(HolidayId.eidAlFitr, year, month, day) &&
         !_isDisabled(HolidayId.eidAlFitr, year, month, day)) {
-      items.add(TranslationService.translate('Eid al-Fitr'));
+      items.add(_t('Eid al-Fitr', language));
     }
 
-    // Eid al-Adha (approximate calculation)
-    if (_isEidAlAdha(year, month, day) &&
+    // Eid al-Adha (provider-based lookup)
+    if (_matchesWesternHoliday(HolidayId.eidAlAdha, year, month, day) &&
         !_isDisabled(HolidayId.eidAlAdha, year, month, day)) {
-      items.add(TranslationService.translate('Eid al-Adha'));
+      items.add(_t('Eid al-Adha', language));
     }
 
     // Chinese New Year
-    if (_isChineseNewYear(year, month, day) &&
+    if (_matchesWesternHoliday(HolidayId.chineseNewYear, year, month, day) &&
         !_isDisabled(HolidayId.chineseNewYear, year, month, day)) {
-      items.add(TranslationService.translate("Chinese New Year's"));
+      items.add(_t("Chinese New Year's", language));
     }
   }
 
@@ -558,6 +590,7 @@ class HolidayCalculator {
     List<String> publicHolidays,
     List<String> religiousHolidays,
     List<String> culturalHolidays,
+    Language language,
   ) {
     final year = westernDate['year']!;
     final month = westernDate['month']!;
@@ -568,7 +601,7 @@ class HolidayCalculator {
         month == 1 &&
         day == 1 &&
         !_isDisabled(HolidayId.newYearDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate("New Year's"));
+      publicHolidays.add(_t("New Year's", language));
     }
 
     // Pre New Year's
@@ -576,7 +609,7 @@ class HolidayCalculator {
         month == 12 &&
         day == 31 &&
         !_isDisabled(HolidayId.holiday, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Holiday'));
+      publicHolidays.add(_t('Holiday', language));
     }
 
     // Independence Day (January 4, since 1948)
@@ -584,7 +617,7 @@ class HolidayCalculator {
         month == 1 &&
         day == 4 &&
         !_isDisabled(HolidayId.independenceDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Independence'));
+      publicHolidays.add(_t('Independence', language));
     }
 
     // Union Day (February 12, since 1947)
@@ -592,7 +625,7 @@ class HolidayCalculator {
         month == 2 &&
         day == 12 &&
         !_isDisabled(HolidayId.unionDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Union'));
+      publicHolidays.add(_t('Union', language));
     }
 
     // Peasants' Day (March 2, since 1958)
@@ -600,7 +633,7 @@ class HolidayCalculator {
         month == 3 &&
         day == 2 &&
         !_isDisabled(HolidayId.peasantsDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Peasants'));
+      publicHolidays.add(_t('Peasants', language));
     }
 
     // Resistance Day (March 27, since 1945)
@@ -608,7 +641,7 @@ class HolidayCalculator {
         month == 3 &&
         day == 27 &&
         !_isDisabled(HolidayId.resistanceDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Resistance'));
+      publicHolidays.add(_t('Resistance', language));
     }
 
     // Labour Day (May 1, since 1923)
@@ -616,7 +649,7 @@ class HolidayCalculator {
         month == 5 &&
         day == 1 &&
         !_isDisabled(HolidayId.labourDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate('Labour'));
+      publicHolidays.add(_t('Labour', language));
     }
 
     // Martyrs' Day (July 19, since 1947)
@@ -624,7 +657,7 @@ class HolidayCalculator {
         month == 7 &&
         day == 19 &&
         !_isDisabled(HolidayId.martyrsDay, year, month, day)) {
-      publicHolidays.add(TranslationService.translate("Martyrs'"));
+      publicHolidays.add(_t("Martyrs'", language));
     }
 
     // Christmas Day (since 1752)
@@ -632,7 +665,7 @@ class HolidayCalculator {
         month == 12 &&
         day == 25 &&
         !_isDisabled(HolidayId.christmasDay, year, month, day)) {
-      religiousHolidays.add(TranslationService.translate('Christmas'));
+      religiousHolidays.add(_t('Christmas', language));
     }
 
     // Easter calculation
@@ -641,10 +674,10 @@ class HolidayCalculator {
 
     if (currentJdn == easterJdn &&
         !_isDisabled(HolidayId.easterSunday, year, month, day)) {
-      religiousHolidays.add(TranslationService.translate('Easter'));
+      religiousHolidays.add(_t('Easter', language));
     } else if (currentJdn == (easterJdn - 2) &&
         !_isDisabled(HolidayId.goodFriday, year, month, day)) {
-      religiousHolidays.add(TranslationService.translate('Good Friday'));
+      religiousHolidays.add(_t('Good Friday', language));
     }
   }
 
@@ -654,6 +687,7 @@ class HolidayCalculator {
     Map<String, int> westernDate,
     List<String> publicHolidays,
     List<String> culturalHolidays,
+    Language language,
   ) {
     final westernYear = westernDate['year']!;
     const solarYear = CalendarConstants.solarYear;
@@ -675,7 +709,7 @@ class HolidayCalculator {
       final newYearJdn = atatJdn + 1;
       final currentJdn = date.julianDayNumber.round();
 
-      final thinGyan = TranslationService.translate('Thingyan');
+      final thinGyan = _t('Thingyan', language);
       final westernMonth = westernDate['month']!;
       final westernDay = westernDate['day']!;
 
@@ -688,7 +722,7 @@ class HolidayCalculator {
             westernDay,
           )) {
         publicHolidays.add(
-          TranslationService.translate("Myanmar New Year's Day"),
+          _t("Myanmar New Year's Day", language),
         );
       }
       // Thingyan Atat
@@ -700,7 +734,7 @@ class HolidayCalculator {
             westernDay,
           )) {
         culturalHolidays.add(
-          '$thinGyan ${TranslationService.translate('Atat')}',
+          '$thinGyan ${_t('Atat', language)}',
         );
       }
       // Thingyan Akyat (water throwing days)
@@ -713,7 +747,7 @@ class HolidayCalculator {
             westernDay,
           )) {
         culturalHolidays.add(
-          '$thinGyan ${TranslationService.translate('Akyat')}',
+          '$thinGyan ${_t('Akyat', language)}',
         );
       }
       // Thingyan Akya
@@ -725,7 +759,7 @@ class HolidayCalculator {
             westernDay,
           )) {
         culturalHolidays.add(
-          '$thinGyan ${TranslationService.translate('Akya')}',
+          '$thinGyan ${_t('Akya', language)}',
         );
       }
       // Thingyan Akyo
@@ -737,7 +771,7 @@ class HolidayCalculator {
             westernDay,
           )) {
         culturalHolidays.add(
-          '$thinGyan ${TranslationService.translate('Akyo')}',
+          '$thinGyan ${_t('Akyo', language)}',
         );
       }
 
@@ -751,16 +785,16 @@ class HolidayCalculator {
         if ((date.year + monthType) >= 1369 && (date.year + monthType) < 1379) {
           if (currentJdn == (akyaJdn - 2) ||
               (currentJdn >= (atatJdn + 2) && currentJdn <= (akyaJdn + 7))) {
-            publicHolidays.add(TranslationService.translate('Holiday'));
+            publicHolidays.add(_t('Holiday', language));
           }
         } else if ((date.year + monthType) >= 1384 &&
             (date.year + monthType) <= 1385) {
           if (currentJdn >= (akyaJdn - 5) && currentJdn <= (akyaJdn - 2)) {
-            publicHolidays.add(TranslationService.translate('Holiday'));
+            publicHolidays.add(_t('Holiday', language));
           }
         } else if ((date.year + monthType) >= 1386) {
           if (currentJdn >= (atatJdn + 2) && currentJdn <= (akyaJdn + 7)) {
-            publicHolidays.add(TranslationService.translate('Holiday'));
+            publicHolidays.add(_t('Holiday', language));
           }
         }
       }
@@ -771,270 +805,21 @@ class HolidayCalculator {
   void _addOtherHolidays(
     Map<String, int> westernDate,
     List<String> otherHolidays,
+    Language language,
   ) {
     final year = westernDate['year']!;
     final month = westernDate['month']!;
     final day = westernDate['day']!;
 
-    // Diwali (approximate calculation)
-    if (_isDiwali(year, month, day) &&
+    // Diwali (provider-based lookup)
+    if (_matchesWesternHoliday(HolidayId.diwali, year, month, day) &&
         !_isDisabled(HolidayId.diwali, year, month, day)) {
-      otherHolidays.add(TranslationService.translate('Diwali'));
+      otherHolidays.add(_t('Diwali', language));
     }
   }
 
-  /// Check if date is Diwali
-  /// Diwali occurs in October or November (15th day of Kartik - Hindu calendar)
-  /// This is an approximate calculation
-  bool _isDiwali(int year, int month, int day) {
-    // Diwali lookup table for known years (you can expand this)
-    final diwaliDates = <int, Map<String, int>>{
-      2014: {'month': 10, 'day': 23},
-      2015: {'month': 11, 'day': 11},
-      2016: {'month': 10, 'day': 30},
-      2017: {'month': 10, 'day': 19},
-      2018: {'month': 11, 'day': 7},
-      2019: {'month': 10, 'day': 27},
-      2020: {'month': 11, 'day': 14},
-      2021: {'month': 11, 'day': 4},
-      2022: {'month': 10, 'day': 24},
-      2023: {'month': 11, 'day': 12},
-      2024: {'month': 11, 'day': 1},
-      2025: {'month': 10, 'day': 20},
-      2026: {'month': 11, 'day': 8},
-      2027: {'month': 10, 'day': 29},
-      2028: {'month': 10, 'day': 17},
-      2029: {'month': 11, 'day': 5},
-      2030: {'month': 10, 'day': 26},
-      2031: {'month': 11, 'day': 14},
-      2032: {'month': 11, 'day': 2},
-      2033: {'month': 10, 'day': 22},
-      2034: {'month': 11, 'day': 10},
-      2035: {'month': 10, 'day': 30},
-      2036: {'month': 10, 'day': 19},
-      2037: {'month': 11, 'day': 7},
-      2038: {'month': 10, 'day': 27},
-      2039: {'month': 10, 'day': 17},
-      2040: {'month': 11, 'day': 4},
-      2041: {'month': 10, 'day': 25},
-      2042: {'month': 11, 'day': 12},
-      2043: {'month': 11, 'day': 1},
-    };
-
-    if (diwaliDates.containsKey(year)) {
-      final diwali = diwaliDates[year]!;
-      return month == diwali['month'] && day == diwali['day'];
-    }
-
-    return false;
-  }
-
-  /// Check if date is Eid al-Fitr
-  /// Eid al-Fitr is at the end of Ramadan (Islamic calendar)
-  bool _isEidAlFitr(int year, int month, int day) {
-    // Eid al-Fitr lookup table (you can expand this)
-    final eidDates = <int, List<Map<String, int>>>{
-      2014: [
-        {'month': 7, 'day': 28},
-        {'month': 7, 'day': 29},
-      ],
-      2015: [
-        {'month': 7, 'day': 17},
-        {'month': 7, 'day': 18},
-      ],
-      2016: [
-        {'month': 7, 'day': 6},
-        {'month': 7, 'day': 7},
-      ],
-      2017: [
-        {'month': 6, 'day': 25},
-        {'month': 6, 'day': 26},
-      ],
-      2018: [
-        {'month': 6, 'day': 15},
-        {'month': 6, 'day': 16},
-      ],
-      2019: [
-        {'month': 6, 'day': 4},
-        {'month': 6, 'day': 5},
-      ],
-      2020: [
-        {'month': 5, 'day': 24},
-        {'month': 5, 'day': 25},
-      ],
-      2021: [
-        {'month': 5, 'day': 13},
-        {'month': 5, 'day': 14},
-      ],
-      2022: [
-        {'month': 5, 'day': 2},
-        {'month': 5, 'day': 3},
-      ],
-      2023: [
-        {'month': 4, 'day': 21},
-        {'month': 4, 'day': 22},
-      ],
-      2024: [
-        {'month': 4, 'day': 10},
-        {'month': 4, 'day': 11},
-      ],
-      2025: [
-        {'month': 3, 'day': 30},
-        {'month': 3, 'day': 31},
-      ],
-      2026: [
-        {'month': 3, 'day': 20},
-        {'month': 3, 'day': 21},
-      ],
-      2027: [
-        {'month': 3, 'day': 9},
-        {'month': 3, 'day': 10},
-      ],
-      2028: [
-        {'month': 2, 'day': 26},
-        {'month': 2, 'day': 27},
-      ],
-      2029: [
-        {'month': 2, 'day': 14},
-        {'month': 2, 'day': 15},
-      ],
-      2030: [
-        {'month': 2, 'day': 4},
-        {'month': 2, 'day': 5},
-      ],
-    };
-
-    if (eidDates.containsKey(year)) {
-      for (final eid in eidDates[year]!) {
-        if (month == eid['month'] && day == eid['day']) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// Check if date is Eid al-Adha
-  /// Eid al-Adha is approximately 70 days after Eid al-Fitr
-  bool _isEidAlAdha(int year, int month, int day) {
-    // Eid al-Adha lookup table (you can expand this)
-    final eidAdha = <int, List<Map<String, int>>>{
-      2014: [
-        {'month': 10, 'day': 4},
-        {'month': 10, 'day': 5},
-      ],
-      2015: [
-        {'month': 9, 'day': 23},
-        {'month': 9, 'day': 24},
-      ],
-      2016: [
-        {'month': 9, 'day': 12},
-        {'month': 9, 'day': 13},
-      ],
-      2017: [
-        {'month': 9, 'day': 1},
-        {'month': 9, 'day': 2},
-      ],
-      2018: [
-        {'month': 8, 'day': 21},
-        {'month': 8, 'day': 22},
-      ],
-      2019: [
-        {'month': 8, 'day': 11},
-        {'month': 8, 'day': 12},
-      ],
-      2020: [
-        {'month': 7, 'day': 31},
-        {'month': 8, 'day': 1},
-      ],
-      2021: [
-        {'month': 7, 'day': 20},
-        {'month': 7, 'day': 21},
-      ],
-      2022: [
-        {'month': 7, 'day': 9},
-        {'month': 7, 'day': 10},
-      ],
-      2023: [
-        {'month': 6, 'day': 28},
-        {'month': 6, 'day': 29},
-      ],
-      2024: [
-        {'month': 6, 'day': 16},
-        {'month': 6, 'day': 17},
-      ],
-      2025: [
-        {'month': 6, 'day': 6},
-        {'month': 6, 'day': 7},
-      ],
-      2026: [
-        {'month': 5, 'day': 27},
-        {'month': 5, 'day': 28},
-      ],
-      2027: [
-        {'month': 5, 'day': 16},
-        {'month': 5, 'day': 17},
-      ],
-      2028: [
-        {'month': 5, 'day': 5},
-        {'month': 5, 'day': 6},
-      ],
-      2029: [
-        {'month': 4, 'day': 24},
-        {'month': 4, 'day': 25},
-      ],
-      2030: [
-        {'month': 4, 'day': 13},
-        {'month': 4, 'day': 14},
-      ],
-    };
-
-    if (eidAdha.containsKey(year)) {
-      for (final eid in eidAdha[year]!) {
-        if (month == eid['month'] && day == eid['day']) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// Check if date is Chinese New Year
-  bool _isChineseNewYear(int year, int month, int day) {
-    // Chinese New Year lookup table (you can expand this)
-    final chineseNewYear = <int, Map<String, int>>{
-      2014: {'month': 1, 'day': 31},
-      2015: {'month': 2, 'day': 19},
-      2016: {'month': 2, 'day': 8},
-      2017: {'month': 1, 'day': 28},
-      2018: {'month': 2, 'day': 16},
-      2019: {'month': 2, 'day': 5},
-      2020: {'month': 1, 'day': 25},
-      2021: {'month': 2, 'day': 12},
-      2022: {'month': 2, 'day': 1},
-      2023: {'month': 1, 'day': 22},
-      2024: {'month': 2, 'day': 10},
-      2025: {'month': 1, 'day': 29},
-      2026: {'month': 2, 'day': 17},
-      2027: {'month': 2, 'day': 6},
-      2028: {'month': 1, 'day': 26},
-      2029: {'month': 2, 'day': 13},
-      2030: {'month': 2, 'day': 3},
-      2031: {'month': 1, 'day': 23},
-      2032: {'month': 2, 'day': 11},
-      2033: {'month': 1, 'day': 31},
-      2034: {'month': 2, 'day': 19},
-      2035: {'month': 2, 'day': 8},
-    };
-
-    if (chineseNewYear.containsKey(year)) {
-      final cny = chineseNewYear[year]!;
-      return month == cny['month'] && day == cny['day'];
-    }
-
-    return false;
+  bool _matchesWesternHoliday(HolidayId id, int year, int month, int day) {
+    return _config.westernHolidayProvider.matches(id, year, month, day);
   }
 
   /// Calculate Easter Sunday for a given year using Gregorian calendar
@@ -1129,6 +914,7 @@ class HolidayCalculator {
     List<String> otherHolidays,
     List<String> myanmarAnniversaryDays,
     List<String> otherAnniversaryDays,
+    Language language,
   ) {
     if (customHolidays.isEmpty) return;
 
@@ -1147,26 +933,32 @@ class HolidayCalculator {
       julianDayNumber: westernJdn,
     );
 
+    final context = CustomHolidayContext(
+      myanmarDate: myanmarDate,
+      westernDate: westernDateObj,
+    );
+
     for (final holiday in customHolidays) {
-      if (holiday.predicate(myanmarDate, westernDateObj)) {
+      if (holiday.matches(context)) {
+        final holidayName = holiday.nameFor(language);
         switch (holiday.type) {
           case HolidayType.public:
-            publicHolidays.add(holiday.name);
+            publicHolidays.add(holidayName);
             break;
           case HolidayType.religious:
-            religiousHolidays.add(holiday.name);
+            religiousHolidays.add(holidayName);
             break;
           case HolidayType.cultural:
-            culturalHolidays.add(holiday.name);
+            culturalHolidays.add(holidayName);
             break;
           case HolidayType.other:
-            otherHolidays.add(holiday.name);
+            otherHolidays.add(holidayName);
             break;
           case HolidayType.myanmarAnniversary:
-            myanmarAnniversaryDays.add(holiday.name);
+            myanmarAnniversaryDays.add(holidayName);
             break;
           case HolidayType.otherAnniversary:
-            otherAnniversaryDays.add(holiday.name);
+            otherAnniversaryDays.add(holidayName);
             break;
         }
       }
