@@ -31,6 +31,33 @@ void main() {
 }
 ```
 
+## Example App
+
+Run the built-in CLI demo app:
+
+```sh
+dart run example/lib/main.dart
+```
+
+With options:
+
+```sh
+dart run example/lib/main.dart \
+  --date=2024-01-04 \
+  --language=en \
+  --timezone=6.5 \
+  --cache=high \
+  --chronicle=true
+```
+
+Options:
+
+- `--date=YYYY-MM-DD` target Western date
+- `--language=en|my|zawgyi|mon|shan|karen`
+- `--timezone=<offset>` range `-12..14`
+- `--cache=default|high|memory|off`
+- `--chronicle=true|false`
+
 ## What You Get
 
 - Myanmar <-> Western date conversion
