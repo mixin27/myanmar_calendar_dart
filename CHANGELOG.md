@@ -6,13 +6,18 @@
   - O(1) LRU bookkeeping with `LinkedHashMap`
   - cache namespace isolation by configuration
   - language-aware complete-date/holiday cache entries
+  - fix `clearAll()` to clear Shan-date cache entries
 - Harden date validation for invalid Western month/day combinations
+- Fix Sasana year calculation for `sasanaYearType=1` on late months
+- Add pluggable `WesternHolidayProvider` and table-driven default rules
 - Make `HolidayInfo` and `AstroInfo` list fields immutable
 - Improve `CompleteDate` model consistency:
   - include Shan date in equality/hashCode
   - include `monthType` in serialized Myanmar map
   - accept integer JDN values in `fromMap`
 - Fix publish workflow tag trigger pattern
+- Tighten public API surface by removing internal service/utils exports
+- Add JS parity regression fixtures against `reference/ceMmDateTime.js`
 - Add regression tests for cache isolation, localization cache behavior,
   invalid dates, and model immutability
 

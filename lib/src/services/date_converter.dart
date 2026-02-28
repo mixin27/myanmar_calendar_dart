@@ -1,10 +1,8 @@
 /// ------------------------------------------------------------
 /// Myanmar Calendar Calculation Core
 ///
-/// Based on original algorithms by: [Dr Yan Naing Aye]
-/// Source: https://github.com/yan9a/mmcal
-/// Language: [Original Language, JavaScript, CPP]
-/// License: [License type, MIT]
+/// Ported from the original Myanmar calendar implementation by Dr Yan Naing Aye.
+/// Source: https://github.com/yan9a/mmcal (MIT License)
 ///
 /// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
@@ -386,12 +384,14 @@ class DateConverter {
     final fortnightDay = monthDay - 15 * (monthDay ~/ 16);
     final weekDay = (jdn + 2) % 7;
 
-    // Calculate Sasana year
-    final sasanaYear = _calculateSasanaYear(myYear, mmonth, monthDay);
+    final fullMonth = mmonth + 12 * monthType;
+
+    // Calculate Sasana year using full month numbering (includes late months).
+    final sasanaYear = _calculateSasanaYear(myYear, fullMonth, monthDay);
 
     return MyanmarDate(
       year: myYear,
-      month: mmonth + 12 * monthType, // Restore full month number
+      month: fullMonth,
       day: monthDay,
       yearType: yearInfo['myt']!.toInt(),
       moonPhase: moonPhase,
@@ -513,10 +513,14 @@ class DateConverter {
     switch (_config.sasanaYearType) {
       case 1:
         if (month >= 13) offset = CalendarConstants.buddhistEraOffset + 1;
+        break;
       case 2:
         if (month == 1 || (month == 2 && day < 15)) {
           offset = CalendarConstants.buddhistEraOffset - 1;
         }
+        break;
+      default:
+        break;
     }
 
     return myanmarYear + offset;

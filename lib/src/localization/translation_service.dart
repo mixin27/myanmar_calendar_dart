@@ -1,10 +1,8 @@
 /// ------------------------------------------------------------
 /// Translation service.
 ///
-/// Based on original algorithms by: [Dr Yan Naing Aye]
-/// Source: https://github.com/yan9a/mmcal
-/// Language: [Original Language, e.g. CPP/JavaScript]
-/// License: [License type, MIT]
+/// Ported from the original Myanmar calendar implementation by Dr Yan Naing Aye.
+/// Source: https://github.com/yan9a/mmcal (MIT License)
 ///
 /// Dart conversion and adaptations by: Kyaw Zayar Tun
 /// Website: https://github.com/mixin27
@@ -102,11 +100,15 @@ class TranslationService {
     ];
 
     if (monthIndex >= 0 && monthIndex < months.length) {
-      var monthName = TranslationService.translate(months[monthIndex]);
+      var monthName = TranslationService.translateTo(
+        months[monthIndex],
+        language,
+      );
 
       // // Handle special cases for watat years
       if (monthIndex == 4 && yearType > 0) {
-        monthName = '${TranslationService.translate('Second')} $monthName';
+        monthName =
+            '${TranslationService.translateTo('Second', language)} $monthName';
       }
 
       return monthName;

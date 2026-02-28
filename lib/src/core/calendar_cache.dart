@@ -519,6 +519,7 @@ class CalendarCache {
   void clearAll() {
     _completeDateCache.clear();
     _myanmarDateCache.clear();
+    _shanDateCache.clear();
     _westernDateCache.clear();
     _astroInfoCache.clear();
     _holidayInfoCache.clear();
@@ -531,6 +532,9 @@ class CalendarCache {
 
   /// Clear MyanmarDate cache only
   void clearMyanmarDateCache() => _myanmarDateCache.clear();
+
+  /// Clear ShanDate cache only
+  void clearShanDateCache() => _shanDateCache.clear();
 
   /// Clear WesternDate cache only
   void clearWesternDateCache() => _westernDateCache.clear();

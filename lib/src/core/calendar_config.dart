@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
+import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
 
 /// Configuration class for the Myanmar Calendar
 class CalendarConfig {
@@ -15,6 +16,7 @@ class CalendarConfig {
     this.disabledHolidays = const [],
     this.disabledHolidaysByYear = const {},
     this.disabledHolidaysByDate = const {},
+    this.westernHolidayProvider = const DefaultWesternHolidayProvider(),
   }) : assert(
          sasanaYearType >= 0 && sasanaYearType <= 2,
          'sasanaYearType must be between 0 and 2',
@@ -91,6 +93,9 @@ class CalendarConfig {
   /// Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
   final Map<String, List<HolidayId>> disabledHolidaysByDate;
 
+  /// Provider for western-calendar holiday rules (e.g., Eid/Diwali/CNY).
+  final WesternHolidayProvider westernHolidayProvider;
+
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
@@ -139,7 +144,8 @@ class CalendarConfig {
         '|dg:${globalDisabled.join(',')}'
         '|dy:$yearSpecificKey'
         '|dd:$dateSpecificKey'
-        '|ch:$customHolidayKey';
+        '|ch:$customHolidayKey'
+        '|whp:${westernHolidayProvider.runtimeType}:${identityHashCode(westernHolidayProvider)}';
   }
 
   /// Copy with new values
@@ -153,6 +159,7 @@ class CalendarConfig {
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
+    WesternHolidayProvider? westernHolidayProvider,
   }) {
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
@@ -166,6 +173,8 @@ class CalendarConfig {
           disabledHolidaysByYear ?? this.disabledHolidaysByYear,
       disabledHolidaysByDate:
           disabledHolidaysByDate ?? this.disabledHolidaysByDate,
+      westernHolidayProvider:
+          westernHolidayProvider ?? this.westernHolidayProvider,
     );
   }
 
@@ -194,7 +203,8 @@ class CalendarConfig {
         const MapEquality<String, List<HolidayId>>().equals(
           other.disabledHolidaysByDate,
           disabledHolidaysByDate,
-        );
+        ) &&
+        identical(other.westernHolidayProvider, westernHolidayProvider);
   }
 
   @override
@@ -209,6 +219,7 @@ class CalendarConfig {
         const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear) ^
         const MapEquality<String, List<HolidayId>>().hash(
           disabledHolidaysByDate,
-        );
+        ) ^
+        identityHashCode(westernHolidayProvider);
   }
 }

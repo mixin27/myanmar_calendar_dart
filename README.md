@@ -38,6 +38,7 @@ void main() {
 - Myanmar and Western date formatting with localization
 - Built-in holidays with flexible disabling rules
 - Custom holiday predicates
+- Pluggable western holiday provider (Eid/Diwali/Chinese New Year)
 - Chronicle and dynasty lookup APIs
 - Cache controls for throughput and memory tuning
 
@@ -108,6 +109,31 @@ MyanmarCalendar.configure(
     '2026-04-17': [HolidayId.myanmarNewYearDay],
   },
 );
+```
+
+### Override western-calendar holiday lookup
+
+Use this when you need custom or more accurate date tables for holidays like
+Eid, Diwali, or Chinese New Year.
+
+```dart
+const provider = TableWesternHolidayProvider(
+  singleDayRules: {
+    HolidayId.diwali: {
+      2045: WesternHolidayDate(month: 11, day: 2),
+    },
+  },
+  multiDayRules: {
+    HolidayId.eidAlFitr: {
+      2045: [
+        WesternHolidayDate(month: 1, day: 1),
+        WesternHolidayDate(month: 1, day: 2),
+      ],
+    },
+  },
+);
+
+MyanmarCalendar.configure(westernHolidayProvider: provider);
 ```
 
 ## Caching
@@ -186,6 +212,18 @@ dart pub get
 dart format --output=none --set-exit-if-changed .
 dart analyze
 dart test
+```
+
+### Reference parity fixtures
+
+The package includes golden fixture tests that compare Dart outputs with
+`reference/ceMmDateTime.js`.
+
+Regenerate fixtures when algorithm behavior changes:
+
+```sh
+node tool/generate_reference_parity_fixtures.mjs
+dart test test/parity_reference_test.dart
 ```
 
 ## Acknowledgements

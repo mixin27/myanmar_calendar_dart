@@ -1,4 +1,5 @@
 import 'package:myanmar_calendar_dart/myanmar_calendar_dart.dart';
+import 'package:myanmar_calendar_dart/src/services/date_converter.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -55,6 +56,27 @@ void main() {
         () => MyanmarCalendar.fromWestern(2025, 11, 31),
         throwsArgumentError,
       );
+    });
+
+    test('clearAll clears shan cache entries too', () {
+      final cache = CalendarCache.independent();
+      const keyJdn = 2460310.5;
+      const shanDate = ShanDate(
+        year: 2120,
+        month: 10,
+        day: 5,
+        myanmarYear: 1387,
+        weekday: 2,
+        monthType: 0,
+        moonPhase: 0,
+        fortnightDay: 5,
+      );
+
+      cache.putShanDate(keyJdn, shanDate);
+      expect(cache.getShanDate(keyJdn), isNotNull);
+
+      cache.clearAll();
+      expect(cache.getShanDate(keyJdn), isNull);
     });
   });
 

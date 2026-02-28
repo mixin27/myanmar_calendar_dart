@@ -13,6 +13,7 @@ import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
 import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
+import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
 import 'package:myanmar_calendar_dart/src/services/ai_prompt_service.dart';
 import 'package:myanmar_calendar_dart/src/services/chronicle_service.dart';
 import 'package:myanmar_calendar_dart/src/services/myanmar_calendar_service.dart';
@@ -78,6 +79,7 @@ class MyanmarCalendar {
   /// [disabledHolidays] - List of built-in holidays to disable globally
   /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
   /// [disabledHolidaysByDate] - Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
+  /// [westernHolidayProvider] - Provider for western-calendar holiday lookup rules
   static void configure({
     Language? language,
     double? timezoneOffset,
@@ -88,6 +90,7 @@ class MyanmarCalendar {
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
+    WesternHolidayProvider? westernHolidayProvider,
   }) {
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
@@ -100,6 +103,7 @@ class MyanmarCalendar {
       disabledHolidays: disabledHolidays,
       disabledHolidaysByYear: disabledHolidaysByYear,
       disabledHolidaysByDate: disabledHolidaysByDate,
+      westernHolidayProvider: westernHolidayProvider,
     );
 
     // Reset service to pick up new configuration
