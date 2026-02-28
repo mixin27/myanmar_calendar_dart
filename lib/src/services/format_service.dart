@@ -26,6 +26,8 @@ class FormatService {
   /// - `&w` : weekday number [0-6]
   /// - `&YT` : year type [e.g. Common Year, Little Watat]
   /// - `&N` : year name [e.g. Hpusha, Magha]
+  /// - `&Nay` : localized "Nay/Day" word
+  /// - `&Yat` : localized "Yat/Date-Day" word
   /// - `&Sy` : year name [e.g. Sasana Year]
   String formatMyanmarDate(
     MyanmarDate date, {
@@ -96,6 +98,16 @@ class FormatService {
       _getYearTypeName(date.yearType, currentLang),
     );
 
+    // Day words (replace longer token before &N to avoid collision)
+    result = result.replaceAll(
+      '&Nay',
+      TranslationService.translateTo('Nay', currentLang),
+    );
+    result = result.replaceAll(
+      '&Yat',
+      TranslationService.translateTo('Yat', currentLang),
+    );
+
     // Year name (12-year cycle)
     result = result.replaceAll('&N', _getYearName(date.year, currentLang));
 
@@ -140,11 +152,7 @@ class FormatService {
     final currentLang = language ?? TranslationService.currentLanguage;
     final format = pattern ?? '%Www %y-%mm-%dd %HH:%nn:%ss';
     var result = format;
-    final monthName = _getWesternMonthName(date.month, currentLang);
-    var abbreviatedMonthName = monthName;
-    if (monthName.length > 3) {
-      abbreviatedMonthName = monthName.substring(0, 3);
-    }
+    final shortMonthName = _getShortWesternMonthName(date.month, currentLang);
 
     // Year with zero padding
     result = result.replaceAll('%yyyy', date.year.toString().padLeft(4, '0'));
@@ -157,10 +165,10 @@ class FormatService {
     result = result.replaceAll('%y', date.year.toString());
 
     // Month (abbreviated, uppercase)
-    result = result.replaceAll('%MMM', abbreviatedMonthName.toUpperCase());
+    result = result.replaceAll('%MMM', shortMonthName.toUpperCase());
 
     // Month (abbreviated)
-    result = result.replaceAll('%Mmm', abbreviatedMonthName);
+    result = result.replaceAll('%Mmm', shortMonthName);
 
     // Month with zero padding
     result = result.replaceAll('%mm', date.month.toString().padLeft(2, '0'));
@@ -196,10 +204,23 @@ class FormatService {
     result = result.replaceAll('%h', hour12.toString());
 
     // AM/PM (uppercase)
-    result = result.replaceAll('%AA', date.hour < 12 ? 'AM' : 'PM');
+    result = result.replaceAll(
+      '%AA',
+      TranslationService.getMeridiem(
+        isAm: date.hour < 12,
+        language: currentLang,
+      ),
+    );
 
     // am/pm (lowercase)
-    result = result.replaceAll('%aa', date.hour < 12 ? 'am' : 'pm');
+    result = result.replaceAll(
+      '%aa',
+      TranslationService.getMeridiem(
+        isAm: date.hour < 12,
+        lowercase: true,
+        language: currentLang,
+      ),
+    );
 
     // Minute with zero padding
     result = result.replaceAll('%nn', date.minute.toString().padLeft(2, '0'));
@@ -216,13 +237,13 @@ class FormatService {
     // Weekday (abbreviated, uppercase)
     result = result.replaceAll(
       '%WWW',
-      _getWeekdayName(date.weekday, currentLang).substring(0, 3).toUpperCase(),
+      _getShortWeekdayName(date.weekday, currentLang).toUpperCase(),
     );
 
     // Weekday (abbreviated)
     result = result.replaceAll(
       '%Www',
-      _getWeekdayName(date.weekday, currentLang).substring(0, 3),
+      _getShortWeekdayName(date.weekday, currentLang),
     );
 
     // Weekday name
@@ -243,74 +264,26 @@ class FormatService {
     int yearType, {
     Language? language,
   }) {
-    final currentLang = language ?? TranslationService.currentLanguage;
-    const months = [
-      'First Waso', // 0
-      'Tagu', // 1
-      'Kason', // 2
-      'Nayon', // 3
-      'Waso', // 4
-      'Wagaung', // 5
-      'Tawthalin', // 6
-      'Thadingyut', // 7
-      'Tazaungmon', // 8
-      'Nadaw', // 9
-      'Pyatho', // 10
-      'Tabodwe', // 11
-      'Tabaung', // 12
-      'Late Tagu', // 13
-      'Late Kason', // 14
-    ];
-
-    if (monthIndex >= 0 && monthIndex < months.length) {
-      var monthName = months[monthIndex];
-      if (monthIndex == 4 && yearType > 0) {
-        monthName = 'Second $monthName';
-      }
-      final nameTokens = monthName.split(' ');
-      return nameTokens
-          .map((token) => TranslationService.translateTo(token, currentLang))
-          .join(' ');
-    }
-    return monthIndex.toString();
+    return TranslationService.getMonthName(monthIndex, yearType, language);
   }
 
   /// Get localized moon phase name
   String _getMoonPhaseName(int phaseIndex, Language language) {
-    const phases = ['Waxing', 'Full Moon', 'Waning', 'New Moon'];
-
-    if (phaseIndex >= 0 && phaseIndex < phases.length) {
-      return TranslationService.translateTo(phases[phaseIndex], language);
-    }
-    return phaseIndex.toString();
+    return TranslationService.getMoonPhaseName(phaseIndex, language);
   }
 
   /// Get localized weekday name
   String _getWeekdayName(int weekdayIndex, Language language) {
-    const weekdays = [
-      'Saturday', // 0
-      'Sunday', // 1
-      'Monday', // 2
-      'Tuesday', // 3
-      'Wednesday', // 4
-      'Thursday', // 5
-      'Friday', // 6
-    ];
+    return TranslationService.getWeekdayName(weekdayIndex, language);
+  }
 
-    if (weekdayIndex >= 0 && weekdayIndex < weekdays.length) {
-      return TranslationService.translateTo(weekdays[weekdayIndex], language);
-    }
-    return weekdayIndex.toString();
+  String _getShortWeekdayName(int weekdayIndex, Language language) {
+    return TranslationService.getShortWeekdayName(weekdayIndex, language);
   }
 
   /// Get localized year type name
   String _getYearTypeName(int yearTypeIndex, Language language) {
-    const yearTypes = ['Common Year', 'Little Watat', 'Big Watat'];
-
-    if (yearTypeIndex >= 0 && yearTypeIndex < yearTypes.length) {
-      return TranslationService.translateTo(yearTypes[yearTypeIndex], language);
-    }
-    return yearTypeIndex.toString();
+    return TranslationService.getYearTypeName(yearTypeIndex, language);
   }
 
   /// Get localized year name from 12-year cycle
@@ -336,45 +309,27 @@ class FormatService {
 
   /// Get localized Western month name
   String _getWesternMonthName(int monthIndex, Language language) {
-    const months = [
-      '', // 0 (placeholder)
-      'January', // 1
-      'February', // 2
-      'March', // 3
-      'April', // 4
-      'May', // 5
-      'June', // 6
-      'July', // 7
-      'August', // 8
-      'September', // 9
-      'October', // 10
-      'November', // 11
-      'December', // 12
-    ];
+    return TranslationService.getWesternMonthName(monthIndex, language);
+  }
 
-    if (monthIndex >= 1 && monthIndex < months.length) {
-      return TranslationService.translateTo(months[monthIndex], language);
-    }
-    return monthIndex.toString();
+  String _getShortWesternMonthName(int monthIndex, Language language) {
+    return TranslationService.getShortWesternMonthName(monthIndex, language);
   }
 
   /// Translate numbers to the current language
   String translateNumbers(String text, {Language? language}) {
     final currentLang = language ?? TranslationService.currentLanguage;
 
-    // Only translate numbers for Myanmar languages
-    if (currentLang == Language.myanmar || currentLang == Language.zawgyi) {
-      var result = text;
-      for (var i = 0; i <= 9; i++) {
-        result = result.replaceAll(
-          i.toString(),
-          TranslationService.translateTo(i.toString(), currentLang),
-        );
-      }
-      return result;
-    }
+    if (!TranslationService.shouldTranslateDigits(currentLang)) return text;
 
-    return text;
+    var result = text;
+    for (var i = 0; i <= 9; i++) {
+      result = result.replaceAll(
+        i.toString(),
+        TranslationService.translateTo(i.toString(), currentLang),
+      );
+    }
+    return result;
   }
 
   /// Format astro information

@@ -116,10 +116,11 @@ class TranslationService {
     return monthIndex.toString();
   }
 
-  /// Get month name by index (0-14)
+  /// Get western month name by month number (1-12)
   static String getWesternMonthName(int monthIndex, [Language? language]) {
     language ??= _currentLanguage;
     const months = [
+      '', // 0 placeholder
       'January',
       'February',
       'March',
@@ -134,16 +135,17 @@ class TranslationService {
       'December',
     ];
 
-    if (monthIndex >= 0 && monthIndex < months.length) {
+    if (monthIndex >= 1 && monthIndex < months.length) {
       return translateTo(months[monthIndex], language);
     }
     return monthIndex.toString();
   }
 
-  /// Get month name by index (0-14)
+  /// Get short western month name by month number (1-12)
   static String getShortWesternMonthName(int monthIndex, [Language? language]) {
     language ??= _currentLanguage;
     const months = [
+      '', // 0 placeholder
       'Jan',
       'Feb',
       'Mar',
@@ -158,7 +160,7 @@ class TranslationService {
       'Dec',
     ];
 
-    if (monthIndex >= 0 && monthIndex < months.length) {
+    if (monthIndex >= 1 && monthIndex < months.length) {
       return translateTo(months[monthIndex], language);
     }
     return monthIndex.toString();
@@ -214,6 +216,29 @@ class TranslationService {
       return translateTo(yearTypes[yearTypeIndex], language);
     }
     return yearTypeIndex.toString();
+  }
+
+  /// Get localized AM/PM label.
+  static String getMeridiem({
+    required bool isAm,
+    bool lowercase = false,
+    Language? language,
+  }) {
+    language ??= _currentLanguage;
+    final key = isAm ? (lowercase ? 'am' : 'AM') : (lowercase ? 'pm' : 'PM');
+    return translateTo(key, language);
+  }
+
+  /// Whether numeric glyph translation is needed for [language].
+  static bool shouldTranslateDigits([Language? language]) {
+    language ??= _currentLanguage;
+    for (var i = 0; i <= 9; i++) {
+      final digit = i.toString();
+      if (translateTo(digit, language) != digit) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static final Map<String, Map<Language, String>> _translations = {
@@ -840,6 +865,39 @@ class TranslationService {
       Language.mon: '၉',
       Language.shan: '9',
       Language.karen: '၉',
+    },
+    // Meridiem
+    'AM': {
+      Language.english: 'AM',
+      Language.myanmar: 'နံနက်',
+      Language.zawgyi: 'နံနက္',
+      Language.mon: 'AM',
+      Language.shan: 'AM',
+      Language.karen: 'AM',
+    },
+    'PM': {
+      Language.english: 'PM',
+      Language.myanmar: 'ညနေ',
+      Language.zawgyi: 'ညေန',
+      Language.mon: 'PM',
+      Language.shan: 'PM',
+      Language.karen: 'PM',
+    },
+    'am': {
+      Language.english: 'am',
+      Language.myanmar: 'နံနက်',
+      Language.zawgyi: 'နံနက္',
+      Language.mon: 'am',
+      Language.shan: 'am',
+      Language.karen: 'am',
+    },
+    'pm': {
+      Language.english: 'pm',
+      Language.myanmar: 'ညနေ',
+      Language.zawgyi: 'ညေန',
+      Language.mon: 'pm',
+      Language.shan: 'pm',
+      Language.karen: 'pm',
     },
     // Astro
     'Sabbath Eve': {

@@ -65,9 +65,25 @@ final westernText = date.formatWestern('%yyyy-%mm-%dd');
 final localized = MyanmarCalendar.format(
   date,
   language: Language.myanmar,
-  includeAstro: true,
-  includeHolidays: true,
 );
+```
+
+### Myanmar format tokens
+
+Common tokens:
+
+- `&y` Myanmar year
+- `&M` Myanmar month name
+- `&P` moon phase
+- `&ff` fortnight day (zero padded)
+- `&W` weekday name
+- `&N` year name cycle
+- `&Nay` localized day word (`Nay`)
+- `&Yat` localized date-day word (`Yat`)
+
+```dart
+final withYat = date.formatMyanmar('&d &Yat', Language.myanmar);
+final withNay = date.formatMyanmar('&d &Nay', Language.myanmar);
 ```
 
 ### Validation and parsing
@@ -134,6 +150,14 @@ const provider = TableWesternHolidayProvider(
 );
 
 MyanmarCalendar.configure(westernHolidayProvider: provider);
+```
+
+Use an empty provider to disable built-in table-based western holiday matches:
+
+```dart
+MyanmarCalendar.configure(
+  westernHolidayProvider: const TableWesternHolidayProvider(),
+);
 ```
 
 ## Caching
@@ -235,7 +259,6 @@ The core calculation algorithms are based on the original work by
 
 MIT License. See [LICENSE](LICENSE).
 
-[dart_install_link]: https://dart.dev/get-dart
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license_link]: https://opensource.org/licenses/MIT
 [very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
