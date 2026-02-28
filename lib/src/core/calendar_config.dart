@@ -15,7 +15,20 @@ class CalendarConfig {
     this.disabledHolidays = const [],
     this.disabledHolidaysByYear = const {},
     this.disabledHolidaysByDate = const {},
-  });
+  }) : assert(
+         sasanaYearType >= 0 && sasanaYearType <= 2,
+         'sasanaYearType must be between 0 and 2',
+       ),
+       assert(
+         calendarType >= 0 && calendarType <= 2,
+         'calendarType must be between 0 and 2',
+       ),
+       assert(
+         timezoneOffset >= -12 && timezoneOffset <= 14,
+         'timezoneOffset must be between -12 and 14',
+       ),
+       assert(gregorianStart > 0, 'gregorianStart must be greater than 0'),
+       assert(defaultLanguage != '', 'defaultLanguage must not be empty');
 
   /// Create config with Myanmar Time (UTC+6:30)
   factory CalendarConfig.myanmarTime() {
@@ -86,6 +99,48 @@ class CalendarConfig {
 
   /// Convert UTC Julian Day Number to local time
   double utcToLocal(double utcJdn) => utcJdn + timezoneOffsetInDays;
+
+  /// Cache namespace fingerprint for this configuration.
+  ///
+  /// This is used to isolate cache entries across different configurations
+  /// when sharing a global cache instance.
+  String get cacheNamespace {
+    final globalDisabled = disabledHolidays.map((e) => e.name).toList()..sort();
+
+    final yearSpecific = disabledHolidaysByYear.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final yearSpecificKey = yearSpecific
+        .map((entry) {
+          final ids = entry.value.map((e) => e.name).toList()..sort();
+          return '${entry.key}:${ids.join('.')}';
+        })
+        .join('|');
+
+    final dateSpecific = disabledHolidaysByDate.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final dateSpecificKey = dateSpecific
+        .map((entry) {
+          final ids = entry.value.map((e) => e.name).toList()..sort();
+          return '${entry.key}:${ids.join('.')}';
+        })
+        .join('|');
+
+    final customHolidayKey = customHolidays
+        .map((holiday) {
+          return '${holiday.id}:${holiday.name}:${holiday.type.index}:${identityHashCode(holiday.predicate)}';
+        })
+        .join('|');
+
+    return 'sy:$sasanaYearType'
+        '|ct:$calendarType'
+        '|gs:$gregorianStart'
+        '|tz:${timezoneOffset.toStringAsFixed(6)}'
+        '|lang:$defaultLanguage'
+        '|dg:${globalDisabled.join(',')}'
+        '|dy:$yearSpecificKey'
+        '|dd:$dateSpecificKey'
+        '|ch:$customHolidayKey';
+  }
 
   /// Copy with new values
   CalendarConfig copyWith({

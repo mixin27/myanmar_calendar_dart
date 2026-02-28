@@ -1,16 +1,12 @@
 # Myanmar Calendar Dart
 
 [![style: very good analysis][very_good_analysis_badge]][very_good_analysis_link]
-[![Powered by Mason](https://img.shields.io/endpoint?url=https%3A%2F%2Ftinyurl.com%2Fmason-badge)](https://github.com/felangel/mason)
 [![License: MIT][license_badge]][license_link]
 
-Myanmar calendar package
+A pure Dart package for Myanmar calendar calculation, conversion, formatting,
+holiday rules, and astrological information.
 
-## Installation 💻
-
-**❗ In order to start using Myanmar Calendar Dart you must have the [Dart SDK][dart_install_link] installed on your machine.**
-
-Install via `dart pub add`:
+## Installation
 
 ```sh
 dart pub add myanmar_calendar_dart
@@ -18,446 +14,191 @@ dart pub add myanmar_calendar_dart
 
 ## Quick Start
 
-### Basic Usage
-
 ```dart
 import 'package:myanmar_calendar_dart/myanmar_calendar_dart.dart';
 
 void main() {
-  // Configure the calendar (optional)
   MyanmarCalendar.configure(
-    language: Language.myanmar,
-    timezoneOffset: 6.5, // Myanmar Standard Time
+    language: Language.english,
+    timezoneOffset: 6.5,
   );
 
-  // Get today's date
   final today = MyanmarCalendar.today();
-  print('Today: ${today.formatComplete()}');
+  print(today.formatComplete(includeAstro: true, includeHolidays: true));
 
-  // Convert Western date to Myanmar
-  final myanmarDate = MyanmarCalendar.fromWestern(2024, 1, 1);
-  print('Myanmar: ${myanmarDate.formatMyanmar()}');
-  print('Western: ${myanmarDate.formatWestern()}');
+  final converted = MyanmarCalendar.fromWestern(2024, 1, 1);
+  print(converted.formatMyanmar('&y &M &P &ff'));
 }
 ```
 
-## Core Classes
+## What You Get
 
-### MyanmarCalendar
+- Myanmar <-> Western date conversion
+- Complete date object (Myanmar, Western, Shan, holidays, astro)
+- Myanmar and Western date formatting with localization
+- Built-in holidays with flexible disabling rules
+- Custom holiday predicates
+- Chronicle and dynasty lookup APIs
+- Cache controls for throughput and memory tuning
 
-The main entry point for all Myanmar calendar operations.
+## Core API
+
+### Main entry point
 
 ```dart
-// Configuration
-MyanmarCalendar.configure(
-  language: Language.myanmar,
-  timezoneOffset: 6.5,
-  sasanaYearType: 0, // 0, 1, or 2
-  customHolidays: [ ... ], // Your custom holidays
-);
+final date = MyanmarCalendar.today();
+final fromWestern = MyanmarCalendar.fromWestern(2024, 4, 17);
+final fromMyanmar = MyanmarCalendar.fromMyanmar(1385, 1, 1);
 
-// Factory methods
-final today = MyanmarCalendar.today();
-final fromWestern = MyanmarCalendar.fromWestern(2024, 1, 1);
-final fromMyanmar = MyanmarCalendar.fromMyanmar(1385, 10, 1);
-final fromDateTime = MyanmarCalendar.fromDateTime(DateTime.now());
-
-// Parsing
-final parsed = MyanmarCalendar.parseMyanmar('1385/10/1');
-
-// Information
 final complete = MyanmarCalendar.getCompleteDate(DateTime.now());
-final astro = MyanmarCalendar.getAstroInfo(date);
-final holidays = MyanmarCalendar.getHolidayInfo(date);
-
-// Validation
-final isValid = MyanmarCalendar.isValidMyanmar(1385, 10, 1);
-final validation = MyanmarCalendar.validateMyanmar(1385, 10, 1);
-
-// Utilities
-final daysBetween = MyanmarCalendar.daysBetween(date1, date2);
-final added = MyanmarCalendar.addDays(date, 10);
-final sabbathDays = MyanmarCalendar.findSabbathDays(1385, 10);
+final astro = MyanmarCalendar.getAstroInfo(date.myanmarDate);
+final holidays = MyanmarCalendar.getHolidayInfo(date.myanmarDate);
 ```
 
-### MyanmarDateTime
-
-Represents a specific moment in time with both Myanmar and Western calendar information.
+### Formatting
 
 ```dart
-final mdt = MyanmarDateTime.now();
+final myanmarText = date.formatMyanmar('&y &M &P &ff');
+final westernText = date.formatWestern('%yyyy-%mm-%dd');
 
-// Properties
-print('Myanmar Year: ${mdt.myanmarYear}');
-print('Myanmar Month: ${mdt.myanmarMonth}');
-print('Myanmar Day: ${mdt.myanmarDay}');
-print('Western Year: ${mdt.westernYear}');
-print('Moon Phase: ${mdt.moonPhase}');
-print('Is Sabbath: ${mdt.isSabbath}');
-print('Holidays: ${mdt.allHolidays}');
-
-// Date arithmetic
-final tomorrow = mdt.addDays(1);
-final nextWeek = mdt.addDays(7);
-final duration = mdt.difference(other);
-
-// Formatting
-final myanmarFormat = mdt.formatMyanmar('&y &M &P &ff');
-final westernFormat = mdt.formatWestern('%d-%m-%yyyy');
-final complete = mdt.formatComplete();
-
-// Comparisons
-final isBefore = mdt.isBefore(other);
-final isAfter = mdt.isAfter(other);
-final isSameDay = mdt.isSameDay(other);
+final localized = MyanmarCalendar.format(
+  date,
+  language: Language.myanmar,
+  includeAstro: true,
+  includeHolidays: true,
+);
 ```
 
-## Languages
-
-The package supports multiple languages:
+### Validation and parsing
 
 ```dart
-enum Language {
-  myanmar,    // မြန်မာ
-  english,    // English
-  zawgyi,     // Zawgyi Myanmar
-  mon,        // Mon
-  shan,       // Shan
-  karen,      // Karen
-}
+final valid = MyanmarCalendar.isValidMyanmar(1385, 10, 1);
+final result = MyanmarCalendar.validateMyanmar(1385, 10, 1);
 
-// Usage
-MyanmarCalendar.setLanguage(Language.myanmar);
-final currentLang = MyanmarCalendar.currentLanguage;
+final parsedMyanmar = MyanmarCalendar.parseMyanmar('1385/10/1');
+final parsedWestern = MyanmarCalendar.parseWestern('2024-01-01');
 ```
 
-## Date Formatting
+## Holiday Customization
 
-### Myanmar Date Patterns
-
-```dart
-final date = MyanmarCalendar.today();
-
-// Available patterns
-'&y'     // Myanmar year (e.g., ၁၃၈၅)
-'&M'     // Myanmar month name (e.g., တပေါင်း)
-'&P'     // Moon phase (e.g., လဆုတ်)
-'&ff'    // Fortnight day (e.g., ၁၀)
-'&d'     // Day number
-'&w'     // Weekday name
-'&Sy'     // Sasana Year (e.g., ၂၅၆၉)
-
-// Example usage
-final formatted = date.formatMyanmar('&y ခုနှစ် &M &P &ff');
-// Output: ၁၃၈၅ ခုနှစ် တပေါင်း လဆုတ် ၁၀
-```
-
-### Western Date Patterns
+### Add custom holidays
 
 ```dart
-// Available patterns
-'%yyyy'     // Year (e.g., 2024)
-'%M'     // Month name (e.g., January)
-'%d'     // Day (e.g., 01)
-'%w'     // Weekday name (e.g., Monday)
-
-// Example usage
-final formatted = date.formatWestern('%d %M %yyyy');
-// Output: 01 January 2024
-```
-
-## Astrological Information
-
-```dart
-final date = MyanmarCalendar.today();
-
-// Moon phases
-print('Moon Phase: ${date.moonPhase}'); // 0-3
-print('Is Full Moon: ${date.isFullMoon}');
-print('Is New Moon: ${date.isNewMoon}');
-
-// Buddhist calendar
-print('Sasana Year: ${date.sasanaYear}');
-print('Is Sabbath: ${date.isSabbath}');
-print('Is Sabbath Eve: ${date.isSabbathEve}');
-
-// Astrological days
-print('Yatyaza: ${date.yatyaza}');
-print('Pyathada: ${date.pyathada}');
-print('Nagahle: ${date.nagahle}');
-print('Mahabote: ${date.mahabote}');
-
-// Year information
-print('Year Type: ${date.yearType}'); // 0=common, 1=little watat, 2=big watat
-print('Is Watat Year: ${date.isWatatYear}');
-```
-
-## Holiday Information
-
-```dart
-final date = MyanmarCalendar.today();
-
-// All holidays
-print('Has Holidays: ${date.hasHolidays}');
-print('All Holidays: ${date.allHolidays}');
-
-// By category
-print('Public Holidays: ${date.publicHolidays}');
-print('Religious Holidays: ${date.religiousHolidays}');
-print('Cultural Holidays: ${date.culturalHolidays}');
-
-// Get holiday info directly
-final holidayInfo = MyanmarCalendar.getHolidayInfo(date.myanmarDate);
-```
-
-## Custom Holidays
-
-You can add your own holidays to the calendar. These can be based on either Myanmar dates or Western dates.
-
-```dart
-// Define custom holidays
-final myBirthday = CustomHoliday(
-  id: 'my_birthday',
-  name: 'My Birthday',
-  type: HolidayType.other,
+final myHoliday = CustomHoliday(
+  id: 'team_day',
+  name: 'Team Day',
+  type: HolidayType.cultural,
   predicate: (myanmarDate, westernDate) {
-    // Check against Western date (e.g., July 27)
     return westernDate.month == 7 && westernDate.day == 27;
   },
 );
 
-final companyAnniversary = CustomHoliday(
-  id: 'company_anniversary',
-  name: 'Company Anniversary',
-  type: HolidayType.cultural,
-  predicate: (myanmarDate, westernDate) {
-    // Check against Myanmar date (e.g., Tagu 1)
-    return myanmarDate.month == 1 && myanmarDate.day == 1;
-  },
-);
-
-// Configure the calendar with custom holidays
-MyanmarCalendar.configure(
-  language: Language.myanmar,
-  customHolidays: [myBirthday, companyAnniversary],
-);
-
-// You can also add/remove holidays dynamically
-MyanmarCalendar.addCustomHoliday(anotherHoliday);
-MyanmarCalendar.removeCustomHoliday(myBirthday);
+MyanmarCalendar.configure(customHolidays: [myHoliday]);
 ```
 
-## Flexible Built-in Holidays
-
-Built-in holidays can be disabled globally or for specific years. This is useful when government declarations for official holidays change annually.
+### Disable built-in holidays
 
 ```dart
-// Disable Independence Day globally
 MyanmarCalendar.configure(
   disabledHolidays: [HolidayId.independenceDay],
-);
-
-// Disable multiple holidays for a specific year only
-MyanmarCalendar.configure(
   disabledHolidaysByYear: {
-    2024: [HolidayId.newYearDay, HolidayId.independenceDay],
+    2026: [HolidayId.newYearDay],
   },
-);
-
-// Disable a holiday for a specific date only
-MyanmarCalendar.configure(
   disabledHolidaysByDate: {
-    '2026-04-20': [HolidayId.holiday],
+    '2026-04-17': [HolidayId.myanmarNewYearDay],
   },
 );
-
-// Reset configuration to default
-MyanmarCalendar.reset();
 ```
 
-## AI Prompt Generation
+## Caching
 
-The package provides a specialized service to generate structured prompts for AI platforms (Gemini, ChatGPT, Claude) based on traditional Burmese astrological knowledge.
+Caching is enabled by default to improve repeated conversion and lookup paths.
 
-### Generating Prompts
+### Configure cache profile
 
 ```dart
-// Generate a horoscope prompt
-final prompt = MyanmarCalendar.generateAIPrompt(
-  completeDate,
-  language: Language.english,
-  type: AIPromptType.horoscope,
-);
+// Default profile
+MyanmarCalendar.configureCache(const CacheConfig());
 
-// Copy to clipboard or send to AI
-print(prompt);
+// Larger cache for heavy throughput
+MyanmarCalendar.configureCache(const CacheConfig.highPerformance());
+
+// Smaller cache with TTL
+MyanmarCalendar.configureCache(const CacheConfig.memoryEfficient());
+
+// Disable cache completely
+MyanmarCalendar.configureCache(const CacheConfig.disabled());
 ```
 
-### Prompt Types
-- `AIPromptType.horoscope`: General reading and character analysis.
-- `AIPromptType.fortuneTelling`: Focus on future trends, wealth, and success.
-- `AIPromptType.divination`: Spiritual guidance, inner growth, and overcoming obstacles.
-
-## Date Arithmetic and Utilities
-
-### Basic Operations
+### Cache operations
 
 ```dart
-final date = MyanmarCalendar.today();
+MyanmarCalendar.clearCache();
+MyanmarCalendar.resetCacheStatistics();
 
-// Add/subtract days
-final tomorrow = date.addDays(1);
-final yesterday = date.subtractDays(1);
-final nextWeek = date.addDays(7);
-
-// Add time units
-final laterToday = date.addHours(3);
-final soon = date.addMinutes(30);
-
-// Duration operations
-final duration = const Duration(days: 5, hours: 3);
-final future = date.add(duration);
+final stats = MyanmarCalendar.getCacheStatistics();
+print(stats);
 ```
 
-### Advanced Utilities
+### Notes
+
+- Cache entries are isolated by configuration fingerprint to avoid cross-config collisions.
+- Holiday and complete-date cache entries are language-aware.
+- If your workload is mostly one-off conversions, disabling cache is reasonable.
+
+## Localization
+
+Supported languages:
+
+- `Language.english`
+- `Language.myanmar`
+- `Language.zawgyi`
+- `Language.mon`
+- `Language.shan`
+- `Language.karen`
 
 ```dart
-// Find special days
-final sabbathDays = MyanmarCalendar.findSabbathDays(1385, 10);
-final nextFullMoon = MyanmarCalendar.findNextMoonPhase(date, 1);
-
-// Month information
-final monthDates = MyanmarCalendar.getMyanmarMonth(1385, 10);
-final westernDates = MyanmarCalendar.getWesternDatesForMyanmarMonth(1385, 10);
-
-// Year information
-final isWatat = MyanmarCalendar.isWatatYear(1385);
-final yearType = MyanmarCalendar.getYearType(1385);
-
-// Date calculations
-final daysBetween = MyanmarCalendar.daysBetween(date1, date2);
-final addedMonths = MyanmarCalendar.addMonths(date, 3);
+MyanmarCalendar.setLanguage(Language.myanmar);
 ```
 
-## Configuration Options
+## Chronicle APIs
 
 ```dart
-MyanmarCalendar.configure(
-  language: Language.myanmar,           // Default language
-  timezoneOffset: 6.5,                 // Myanmar Standard Time
-  sasanaYearType: 0,                   // Sasana year calculation method
-  calendarType: 1,                     // Calendar system (0=British, 1=Gregorian)
-  gregorianStart: 2361222,             // Julian Day of Gregorian start
-);
-
-// Get current configuration
-final config = MyanmarCalendar.config;
-final diagnostics = MyanmarCalendar.getDiagnostics();
+final entries = MyanmarCalendar.getChronicleFor(DateTime(1752, 9, 14));
+final dynasties = MyanmarCalendar.listDynasties();
+final dynasty = MyanmarCalendar.getDynastyById('konbaung');
 ```
-
-## Error Handling and Validation
-
-```dart
-// Validate Myanmar dates
-final result = MyanmarCalendar.validateMyanmar(1385, 15, 1);
-if (!result.isValid) {
-  print('Error: ${result.error}');
-}
-
-// Quick validation
-final isValid = MyanmarCalendar.isValidMyanmar(1385, 10, 1);
-
-// Safe parsing
-final parsed = MyanmarCalendar.parseMyanmar('1385/10/1');
-if (parsed != null) {
-  print('Parsed successfully: ${parsed.formatMyanmar()}');
-} else {
-  print('Failed to parse date string');
-}
-```
-
-## Advanced Examples
-
-
-### Batch Date Processing
-
-```dart
-// Convert multiple dates
-final westernDates = [
-  DateTime(2024, 1, 1),
-  DateTime(2024, 2, 1),
-  DateTime(2024, 3, 1),
-];
-
-final myanmarDates = MyanmarCalendar.convertWesternDates(westernDates);
-final completeDates = MyanmarCalendar.getCompleteDates(westernDates);
-
-// Process Myanmar date data
-final dateMaps = [
-  {'year': 1385, 'month': 10, 'day': 1},
-  {'year': 1385, 'month': 10, 'day': 15},
-];
-final converted = MyanmarCalendar.convertMyanmarDates(dateMaps);
-```
-
 
 ## Error Handling
 
-The package includes comprehensive custom exception classes with detailed error messages and recovery suggestions.
-
-### Exception Types
-
 ```dart
 try {
-  final date = MyanmarCalendar.fromMyanmar(1385, 15, 1);  // Invalid month
-} on InvalidMyanmarDateException catch (e) {
-  print('Error: ${e.message}');
-  print('Suggestion: ${e.details!['suggestion']}');
-  // Output: Myanmar month must be between 1 and 13...
-} on DateConversionException catch (e) {
-  print('Conversion failed: ${e.message}');
-} catch (e) {
-  print('Unexpected error: $e');
+  MyanmarCalendar.fromWestern(2024, 2, 30); // invalid date
+} on ArgumentError catch (e) {
+  print(e);
 }
 ```
 
-### Available Exceptions
+## Development
 
-- `InvalidMyanmarDateException` - Invalid Myanmar date components
-- `InvalidWesternDateException` - Invalid Western date components
-- `DateConversionException` - Date conversion failures
-- `DateParseException` - Date string parsing failures
-- `InvalidConfigurationException` - Invalid configuration parameters
-- `DateOutOfRangeException` - Dates outside supported ranges
-- `CacheException` - Caching system issues
-- `AstrologicalCalculationException` - Astrological calculation failures
-- `HolidayCalculationException` - Holiday calculation failures
+```sh
+dart pub get
+dart format --output=none --set-exit-if-changed .
+dart analyze
+dart test
+```
 
 ## Acknowledgements
 
-The calculation algorithms are based on the original work by
-[Dr Yan Naing Aye](https://github.com/yan9a/mmcal) in Javascript and C++.
-I converted and adapted the implementation for Dart.
+The core calculation algorithms are based on the original work by
+[Dr Yan Naing Aye](https://github.com/yan9a/mmcal).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
+MIT License. See [LICENSE](LICENSE).
 
 [dart_install_link]: https://dart.dev/get-dart
-[github_actions_link]: https://docs.github.com/en/actions/learn-github-actions
 [license_badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [license_link]: https://opensource.org/licenses/MIT
-[logo_black]: https://raw.githubusercontent.com/VGVentures/very_good_brand/main/styles/README/vgv_logo_black.png#gh-light-mode-only
-[logo_white]: https://raw.githubusercontent.com/VGVentures/very_good_brand/main/styles/README/vgv_logo_white.png#gh-dark-mode-only
-[mason_link]: https://github.com/felangel/mason
 [very_good_analysis_badge]: https://img.shields.io/badge/style-very_good_analysis-B22C89.svg
 [very_good_analysis_link]: https://pub.dev/packages/very_good_analysis
-[very_good_coverage_link]: https://github.com/marketplace/actions/very-good-coverage
-[very_good_ventures_link]: https://verygood.ventures
-[very_good_ventures_link_light]: https://verygood.ventures#gh-light-mode-only
-[very_good_ventures_link_dark]: https://verygood.ventures#gh-dark-mode-only
-[very_good_workflows_link]: https://github.com/VeryGoodOpenSource/very_good_workflows

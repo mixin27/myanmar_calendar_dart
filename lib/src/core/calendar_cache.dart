@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
@@ -101,27 +103,22 @@ class _LRUCache<K, V> {
   final int maxSize;
   final int ttl;
   final bool enabled;
-  final Map<K, _CacheEntry<V>> _cache = {};
-  final List<K> _accessOrder = [];
+  final LinkedHashMap<K, _CacheEntry<V>> _cache = LinkedHashMap();
 
   V? get(K key) {
     // If caching is disabled, always return null
     if (!enabled || maxSize == 0) return null;
 
-    final entry = _cache[key];
+    final entry = _cache.remove(key);
     if (entry == null) return null;
 
     // Check if expired
     if (entry.isExpired(ttl)) {
-      _cache.remove(key);
-      _accessOrder.remove(key);
       return null;
     }
 
-    // Update access order
-    _accessOrder
-      ..remove(key)
-      ..add(key);
+    // Reinsert to move this key to MRU position.
+    _cache[key] = entry;
 
     return entry.value;
   }
@@ -131,29 +128,24 @@ class _LRUCache<K, V> {
     if (!enabled || maxSize == 0) return;
 
     // Remove if already exists
-    if (_cache.containsKey(key)) {
-      _accessOrder.remove(key);
-    }
+    _cache.remove(key);
 
     // Add new entry
     _cache[key] = _CacheEntry(value);
-    _accessOrder.add(key);
 
-    // Evict oldest if necessary
-    while (_accessOrder.length > maxSize) {
-      final oldestKey = _accessOrder.removeAt(0);
+    // Evict LRU if necessary.
+    while (_cache.length > maxSize) {
+      final oldestKey = _cache.keys.first;
       _cache.remove(oldestKey);
     }
   }
 
   void remove(K key) {
     _cache.remove(key);
-    _accessOrder.remove(key);
   }
 
   void clear() {
     _cache.clear();
-    _accessOrder.clear();
   }
 
   int get size => _cache.length;
@@ -282,13 +274,18 @@ class CalendarCache {
   CompleteDate? getCompleteDate(
     DateTime dateTime, {
     List<CustomHoliday>? customHolidays,
+    String namespace = '',
   }) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = _generateCompleteDateKey(dateTime, customHolidays);
+    final key = _generateCompleteDateKey(
+      dateTime,
+      customHolidays,
+      namespace: namespace,
+    );
     final cached = _completeDateCache.get(key);
 
     if (cached != null) {
@@ -305,20 +302,25 @@ class CalendarCache {
     DateTime dateTime,
     CompleteDate completeDate, {
     List<CustomHoliday>? customHolidays,
+    String namespace = '',
   }) {
     if (!_config.enableCaching) return;
-    final key = _generateCompleteDateKey(dateTime, customHolidays);
+    final key = _generateCompleteDateKey(
+      dateTime,
+      customHolidays,
+      namespace: namespace,
+    );
     _completeDateCache.put(key, completeDate);
   }
 
   /// Get cached MyanmarDate
-  MyanmarDate? getMyanmarDate(double julianDayNumber) {
+  MyanmarDate? getMyanmarDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _myanmarDateCache.get(key);
 
     if (cached != null) {
@@ -331,20 +333,24 @@ class CalendarCache {
   }
 
   /// Cache MyanmarDate
-  void putMyanmarDate(double julianDayNumber, MyanmarDate myanmarDate) {
+  void putMyanmarDate(
+    double julianDayNumber,
+    MyanmarDate myanmarDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _myanmarDateCache.put(key, myanmarDate);
   }
 
   /// Get cached WesternDate
-  WesternDate? getWesternDate(double julianDayNumber) {
+  WesternDate? getWesternDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _westernDateCache.get(key);
 
     if (cached != null) {
@@ -357,20 +363,24 @@ class CalendarCache {
   }
 
   /// Cache WesternDate
-  void putWesternDate(double julianDayNumber, WesternDate westernDate) {
+  void putWesternDate(
+    double julianDayNumber,
+    WesternDate westernDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _westernDateCache.put(key, westernDate);
   }
 
   /// Get cached ShanDate
-  ShanDate? getShanDate(double julianDayNumber) {
+  ShanDate? getShanDate(double julianDayNumber, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     final cached = _shanDateCache.get(key);
 
     if (cached != null) {
@@ -383,20 +393,24 @@ class CalendarCache {
   }
 
   /// Cache ShanDate
-  void putShanDate(double julianDayNumber, ShanDate shanDate) {
+  void putShanDate(
+    double julianDayNumber,
+    ShanDate shanDate, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = julianDayNumber.toStringAsFixed(6);
+    final key = _namespaceKey(julianDayNumber.toStringAsFixed(6), namespace);
     _shanDateCache.put(key, shanDate);
   }
 
   /// Get cached AstroInfo
-  AstroInfo? getAstroInfo(dynamic myanmarDate) {
+  AstroInfo? getAstroInfo(dynamic myanmarDate, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final key = _generateMyanmarDateKey(myanmarDate);
+    final key = _namespaceKey(_generateMyanmarDateKey(myanmarDate), namespace);
     final cached = _astroInfoCache.get(key);
 
     if (cached != null) {
@@ -409,31 +423,36 @@ class CalendarCache {
   }
 
   /// Cache AstroInfo
-  void putAstroInfo(dynamic myanmarDate, AstroInfo astroInfo) {
+  void putAstroInfo(
+    dynamic myanmarDate,
+    AstroInfo astroInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    final key = _generateMyanmarDateKey(myanmarDate);
+    final key = _namespaceKey(_generateMyanmarDateKey(myanmarDate), namespace);
     _astroInfoCache.put(key, astroInfo);
   }
 
   /// Get cached HolidayInfo
-  HolidayInfo? getHolidayInfo(dynamic myanmarDate) {
+  HolidayInfo? getHolidayInfo(dynamic myanmarDate, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
     final key = _generateMyanmarDateKey(myanmarDate);
-    return getHolidayInfoByKey(key);
+    return getHolidayInfoByKey(key, namespace: namespace);
   }
 
   /// Get cached HolidayInfo by key
-  HolidayInfo? getHolidayInfoByKey(String key) {
+  HolidayInfo? getHolidayInfoByKey(String key, {String namespace = ''}) {
     if (!_config.enableCaching) {
       _misses++;
       return null;
     }
 
-    final cached = _holidayInfoCache.get(key);
+    final namespacedKey = _namespaceKey(key, namespace);
+    final cached = _holidayInfoCache.get(namespacedKey);
 
     if (cached != null) {
       _hits++;
@@ -445,16 +464,24 @@ class CalendarCache {
   }
 
   /// Cache HolidayInfo
-  void putHolidayInfo(dynamic myanmarDate, HolidayInfo holidayInfo) {
+  void putHolidayInfo(
+    dynamic myanmarDate,
+    HolidayInfo holidayInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
     final key = _generateMyanmarDateKey(myanmarDate);
-    putHolidayInfoByKey(key, holidayInfo);
+    putHolidayInfoByKey(key, holidayInfo, namespace: namespace);
   }
 
   /// Cache HolidayInfo by key
-  void putHolidayInfoByKey(String key, HolidayInfo holidayInfo) {
+  void putHolidayInfoByKey(
+    String key,
+    HolidayInfo holidayInfo, {
+    String namespace = '',
+  }) {
     if (!_config.enableCaching) return;
-    _holidayInfoCache.put(key, holidayInfo);
+    _holidayInfoCache.put(_namespaceKey(key, namespace), holidayInfo);
   }
 
   String _generateMyanmarDateKey(dynamic myanmarDate) {
@@ -466,13 +493,22 @@ class CalendarCache {
 
   String _generateCompleteDateKey(
     DateTime dateTime,
-    List<CustomHoliday>? customHolidays,
-  ) {
-    final dateKey = dateTime.toUtc().microsecondsSinceEpoch.toString();
+    List<CustomHoliday>? customHolidays, {
+    String namespace = '',
+  }) {
+    final dateKey = _namespaceKey(
+      dateTime.toUtc().microsecondsSinceEpoch.toString(),
+      namespace,
+    );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
 
     final holidayIds = customHolidays.map((h) => h.id).toList()..sort();
     return '$dateKey|${holidayIds.join(',')}';
+  }
+
+  String _namespaceKey(String key, String namespace) {
+    if (namespace == '') return key;
+    return '$namespace|$key';
   }
 
   // ============================================================================
@@ -549,6 +585,7 @@ class CalendarCache {
       'caches': {
         'complete_date': _completeDateCache.getStats(),
         'myanmar_date': _myanmarDateCache.getStats(),
+        'shan_date': _shanDateCache.getStats(),
         'western_date': _westernDateCache.getStats(),
         'astro_info': _astroInfoCache.getStats(),
         'holiday_info': _holidayInfoCache.getStats(),
@@ -556,6 +593,7 @@ class CalendarCache {
       'total_memory_entries':
           _completeDateCache.size +
           _myanmarDateCache.size +
+          _shanDateCache.size +
           _westernDateCache.size +
           _astroInfoCache.size +
           _holidayInfoCache.size,

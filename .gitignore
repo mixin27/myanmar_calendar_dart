@@ -5,5 +5,4 @@
 .packages
 build/
 pubspec.lock
-
 coverage/

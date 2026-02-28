@@ -27,9 +27,16 @@ import 'package:myanmar_calendar_dart/src/utils/package_constants.dart';
 /// Date converter core
 class DateConverter {
   /// Create a new date converter
-  DateConverter(this._config, {required CalendarCache cache}) : _cache = cache;
+  DateConverter(
+    this._config, {
+    required CalendarCache cache,
+    String? cacheNamespace,
+  }) : _cache = cache,
+       _cacheNamespace =
+           cacheNamespace ?? 'date_converter|${_config.cacheNamespace}';
   final CalendarConfig _config;
   final CalendarCache _cache;
+  final String _cacheNamespace;
 
   /// Get current calendar config.
   CalendarConfig get config => _config;
@@ -143,7 +150,10 @@ class DateConverter {
   /// Convert Julian Day Number to Western date
   WesternDate julianToWestern(double julianDayNumber) {
     // Try to get from cache
-    final cached = _cache.getWesternDate(julianDayNumber);
+    final cached = _cache.getWesternDate(
+      julianDayNumber,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
@@ -155,7 +165,11 @@ class DateConverter {
     );
 
     // Store in cache
-    _cache.putWesternDate(julianDayNumber, westernDate);
+    _cache.putWesternDate(
+      julianDayNumber,
+      westernDate,
+      namespace: _cacheNamespace,
+    );
 
     return westernDate;
   }
@@ -304,7 +318,10 @@ class DateConverter {
   /// Convert Julian Day Number to Myanmar date
   MyanmarDate julianToMyanmar(double julianDayNumber) {
     // Try to get from cache
-    final cached = _cache.getMyanmarDate(julianDayNumber);
+    final cached = _cache.getMyanmarDate(
+      julianDayNumber,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
@@ -316,7 +333,11 @@ class DateConverter {
     );
 
     // Store in cache
-    _cache.putMyanmarDate(julianDayNumber, myanmarDate);
+    _cache.putMyanmarDate(
+      julianDayNumber,
+      myanmarDate,
+      namespace: _cacheNamespace,
+    );
 
     return myanmarDate;
   }
@@ -525,7 +546,12 @@ class DateConverter {
     if (month < 1 || month > 12) {
       throw ArgumentError('Invalid Western month: $month');
     }
-    if (day < 1 || day > 31) throw ArgumentError('Invalid Western day: $day');
+    final maxDay = _getDaysInWesternMonth(year, month);
+    if (day < 1 || day > maxDay) {
+      throw ArgumentError(
+        'Invalid Western day: $day for year $year month $month',
+      );
+    }
     if (hour < 0 || hour > 23) throw ArgumentError('Invalid hour: $hour');
     if (minute < 0 || minute > 59) {
       throw ArgumentError('Invalid minute: $minute');
@@ -533,6 +559,35 @@ class DateConverter {
     if (second < 0 || second > 59) {
       throw ArgumentError('Invalid second: $second');
     }
+  }
+
+  int _getDaysInWesternMonth(int year, int month) {
+    switch (month) {
+      case 1:
+      case 3:
+      case 5:
+      case 7:
+      case 8:
+      case 10:
+      case 12:
+        return 31;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        return 30;
+      case 2:
+        return _isWesternLeapYear(year) ? 29 : 28;
+      default:
+        return 0;
+    }
+  }
+
+  bool _isWesternLeapYear(int year) {
+    if (_config.calendarType == CalendarConstants.calendarTypeJulian) {
+      return year % 4 == 0;
+    }
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
   }
 
   /// Validate Myanmar date

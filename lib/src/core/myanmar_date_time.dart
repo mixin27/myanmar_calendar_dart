@@ -257,16 +257,20 @@ class MyanmarDateTime {
 
   /// Get or create a shared converter for the given config
   static DateConverter _getConverter(CalendarConfig config) {
-    final key = config.hashCode.toString();
+    final key = config.cacheNamespace;
     return _converters.putIfAbsent(
       key,
-      () => DateConverter(config, cache: CalendarCache.global()),
+      () => DateConverter(
+        config,
+        cache: CalendarCache.global(),
+        cacheNamespace: 'date_converter|$key',
+      ),
     );
   }
 
   /// Get or create a shared holiday calculator for the given config
   static HolidayCalculator _getHolidayCalculator(CalendarConfig config) {
-    final key = config.hashCode.toString();
+    final key = config.cacheNamespace;
     return _holidayCalculators.putIfAbsent(
       key,
       () => HolidayCalculator(cache: CalendarCache.global(), config: config),

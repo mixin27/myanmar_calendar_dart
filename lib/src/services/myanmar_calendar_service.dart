@@ -41,6 +41,7 @@ class MyanmarCalendarService {
     CacheConfig? cacheConfig,
     Language? defaultLanguage,
   }) : _config = config ?? CalendarConfig.global,
+       _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.independent(
          config: cacheConfig ?? const CacheConfig(),
        ),
@@ -55,6 +56,7 @@ class MyanmarCalendarService {
     CalendarConfig? config,
     Language? defaultLanguage,
   }) : _config = config ?? CalendarConfig.global,
+       _cacheNamespace = (config ?? CalendarConfig.global).cacheNamespace,
        _cache = CalendarCache.global(), // Use global cache
        _formatService = FormatService() {
     _initializeServices();
@@ -62,6 +64,7 @@ class MyanmarCalendarService {
   }
 
   final CalendarConfig _config;
+  final String _cacheNamespace;
   final CalendarCache _cache;
   late final DateConverter _dateConverter;
   late final AstroCalculator _astroCalculator;
@@ -69,7 +72,11 @@ class MyanmarCalendarService {
   final FormatService _formatService;
 
   void _initializeServices() {
-    _dateConverter = DateConverter(_config, cache: _cache);
+    _dateConverter = DateConverter(
+      _config,
+      cache: _cache,
+      cacheNamespace: 'date_converter|$_cacheNamespace',
+    );
     _astroCalculator = AstroCalculator(cache: _cache);
     _holidayCalculator = HolidayCalculator(cache: _cache, config: _config);
   }
@@ -77,10 +84,6 @@ class MyanmarCalendarService {
   void _setLanguage(Language? defaultLanguage) {
     if (defaultLanguage != null) {
       TranslationService.setLanguage(defaultLanguage);
-    } else {
-      TranslationService.setLanguage(
-        Language.fromCode(_config.defaultLanguage),
-      );
     }
   }
 
@@ -221,10 +224,14 @@ class MyanmarCalendarService {
 
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
   CompleteDate getCompleteDate(DateTime dateTime) {
+    final completeDateNamespace =
+        'complete_date|$_cacheNamespace|lang:${TranslationService.currentLanguage.code}';
+
     // Try to get from cache
     final cached = _cache.getCompleteDate(
       dateTime,
       customHolidays: _config.customHolidays,
+      namespace: completeDateNamespace,
     );
     if (cached != null) {
       return cached;
@@ -255,6 +262,7 @@ class MyanmarCalendarService {
       dateTime,
       completeDate,
       customHolidays: _config.customHolidays,
+      namespace: completeDateNamespace,
     );
 
     return completeDate;

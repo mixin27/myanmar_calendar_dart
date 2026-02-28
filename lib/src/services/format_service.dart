@@ -33,76 +33,76 @@ class FormatService {
     Language? language,
   }) {
     final currentLang = language ?? TranslationService.currentLanguage;
-    final oldLang = TranslationService.currentLanguage;
+    final format = pattern ?? '&y &M &P &ff';
+    var result = format;
 
-    if (currentLang != oldLang) {
-      TranslationService.setLanguage(currentLang);
-    }
+    // Myanmar year with zero padding
+    result = result.replaceAll('&yyyy', date.year.toString().padLeft(4, '0'));
 
-    try {
-      final format = pattern ?? '&y &M &P &ff';
-      var result = format;
+    // Myanmar year
+    result = result.replaceAll('&y', date.year.toString());
 
-      // Myanmar year with zero padding
-      result = result.replaceAll('&yyyy', date.year.toString().padLeft(4, '0'));
+    // Sasana year with zero padding
+    result = result.replaceAll(
+      '&YYYY',
+      date.sasanaYear.toString().padLeft(4, '0'),
+    );
 
-      // Myanmar year
-      result = result.replaceAll('&y', date.year.toString());
+    // Month with zero padding
+    result = result.replaceAll('&mm', date.month.toString().padLeft(2, '0'));
 
-      // Sasana year with zero padding
-      result = result.replaceAll(
-        '&YYYY',
-        date.sasanaYear.toString().padLeft(4, '0'),
-      );
+    // Month name
+    result = result.replaceAll(
+      '&M',
+      getMonthName(date.month, date.yearType, language: currentLang),
+    );
 
-      // Month with zero padding
-      result = result.replaceAll('&mm', date.month.toString().padLeft(2, '0'));
+    // Month number
+    result = result.replaceAll('&m', date.month.toString());
 
-      // Month name
-      result = result.replaceAll('&M', getMonthName(date.month, date.yearType));
+    // Moon phase
+    result = result.replaceAll(
+      '&P',
+      _getMoonPhaseName(date.moonPhase, currentLang),
+    );
 
-      // Month number
-      result = result.replaceAll('&m', date.month.toString());
+    // Day with zero padding
+    result = result.replaceAll('&dd', date.day.toString().padLeft(2, '0'));
 
-      // Moon phase
-      result = result.replaceAll('&P', _getMoonPhaseName(date.moonPhase));
+    // Day
+    result = result.replaceAll('&d', date.day.toString());
 
-      // Day with zero padding
-      result = result.replaceAll('&dd', date.day.toString().padLeft(2, '0'));
+    // Fortnight day with zero padding
+    result = result.replaceAll(
+      '&ff',
+      date.fortnightDay.toString().padLeft(2, '0'),
+    );
 
-      // Day
-      result = result.replaceAll('&d', date.day.toString());
+    // Fortnight day
+    result = result.replaceAll('&f', date.fortnightDay.toString());
 
-      // Fortnight day with zero padding
-      result = result.replaceAll(
-        '&ff',
-        date.fortnightDay.toString().padLeft(2, '0'),
-      );
+    // Weekday name
+    result = result.replaceAll(
+      '&W',
+      _getWeekdayName(date.weekday, currentLang),
+    );
 
-      // Fortnight day
-      result = result.replaceAll('&f', date.fortnightDay.toString());
+    // Weekday number
+    result = result.replaceAll('&w', date.weekday.toString());
 
-      // Weekday name
-      result = result.replaceAll('&W', _getWeekdayName(date.weekday));
+    // Year type
+    result = result.replaceAll(
+      '&YT',
+      _getYearTypeName(date.yearType, currentLang),
+    );
 
-      // Weekday number
-      result = result.replaceAll('&w', date.weekday.toString());
+    // Year name (12-year cycle)
+    result = result.replaceAll('&N', _getYearName(date.year, currentLang));
 
-      // Year type
-      result = result.replaceAll('&YT', _getYearTypeName(date.yearType));
+    // Sasana Year
+    result = result.replaceAll('&Sy', date.sasanaYear.toString());
 
-      // Year name (12-year cycle)
-      result = result.replaceAll('&N', _getYearName(date.year));
-
-      // Sasana Year
-      result = result.replaceAll('&Sy', date.sasanaYear.toString());
-
-      return translateNumbers(result);
-    } finally {
-      if (currentLang != oldLang) {
-        TranslationService.setLanguage(oldLang);
-      }
-    }
+    return translateNumbers(result, language: currentLang);
   }
 
   /// Format Western date according to pattern and language
@@ -138,113 +138,112 @@ class FormatService {
     Language? language,
   }) {
     final currentLang = language ?? TranslationService.currentLanguage;
-    final oldLang = TranslationService.currentLanguage;
-
-    if (currentLang != oldLang) {
-      TranslationService.setLanguage(currentLang);
+    final format = pattern ?? '%Www %y-%mm-%dd %HH:%nn:%ss';
+    var result = format;
+    final monthName = _getWesternMonthName(date.month, currentLang);
+    var abbreviatedMonthName = monthName;
+    if (monthName.length > 3) {
+      abbreviatedMonthName = monthName.substring(0, 3);
     }
 
-    try {
-      final format = pattern ?? '%Www %y-%mm-%dd %HH:%nn:%ss';
-      var result = format;
-      final monthName = _getWesternMonthName(date.month);
-      var abbreviatedMonthName = monthName;
-      if (monthName.length > 3) {
-        abbreviatedMonthName = monthName.substring(0, 3);
-      }
+    // Year with zero padding
+    result = result.replaceAll('%yyyy', date.year.toString().padLeft(4, '0'));
 
-      // Year with zero padding
-      result = result.replaceAll('%yyyy', date.year.toString().padLeft(4, '0'));
+    // Year (2 digits)
+    final year2 = date.year % 100;
+    result = result.replaceAll('%yy', year2.toString().padLeft(2, '0'));
 
-      // Year (2 digits)
-      final year2 = date.year % 100;
-      result = result.replaceAll('%yy', year2.toString().padLeft(2, '0'));
+    // Year
+    result = result.replaceAll('%y', date.year.toString());
 
-      // Year
-      result = result.replaceAll('%y', date.year.toString());
+    // Month (abbreviated, uppercase)
+    result = result.replaceAll('%MMM', abbreviatedMonthName.toUpperCase());
 
-      // Month (abbreviated, uppercase)
-      result = result.replaceAll('%MMM', abbreviatedMonthName.toUpperCase());
+    // Month (abbreviated)
+    result = result.replaceAll('%Mmm', abbreviatedMonthName);
 
-      // Month (abbreviated)
-      result = result.replaceAll('%Mmm', abbreviatedMonthName);
+    // Month with zero padding
+    result = result.replaceAll('%mm', date.month.toString().padLeft(2, '0'));
 
-      // Month with zero padding
-      result = result.replaceAll('%mm', date.month.toString().padLeft(2, '0'));
+    // Month name
+    result = result.replaceAll(
+      '%M',
+      _getWesternMonthName(date.month, currentLang),
+    );
 
-      // Month name
-      result = result.replaceAll('%M', _getWesternMonthName(date.month));
+    // Month number
+    result = result.replaceAll('%m', date.month.toString());
 
-      // Month number
-      result = result.replaceAll('%m', date.month.toString());
+    // Day with zero padding
+    result = result.replaceAll('%dd', date.day.toString().padLeft(2, '0'));
 
-      // Day with zero padding
-      result = result.replaceAll('%dd', date.day.toString().padLeft(2, '0'));
+    // Day
+    result = result.replaceAll('%d', date.day.toString());
 
-      // Day
-      result = result.replaceAll('%d', date.day.toString());
+    // Hour (24-hour with zero padding)
+    result = result.replaceAll('%HH', date.hour.toString().padLeft(2, '0'));
 
-      // Hour (24-hour with zero padding)
-      result = result.replaceAll('%HH', date.hour.toString().padLeft(2, '0'));
+    // Hour (24-hour)
+    result = result.replaceAll('%H', date.hour.toString());
 
-      // Hour (24-hour)
-      result = result.replaceAll('%H', date.hour.toString());
+    // Hour (12-hour with zero padding)
+    final hour12 = date.hour == 0
+        ? 12
+        : (date.hour > 12 ? date.hour - 12 : date.hour);
+    result = result.replaceAll('%hh', hour12.toString().padLeft(2, '0'));
 
-      // Hour (12-hour with zero padding)
-      final hour12 = date.hour == 0
-          ? 12
-          : (date.hour > 12 ? date.hour - 12 : date.hour);
-      result = result.replaceAll('%hh', hour12.toString().padLeft(2, '0'));
+    // Hour (12-hour)
+    result = result.replaceAll('%h', hour12.toString());
 
-      // Hour (12-hour)
-      result = result.replaceAll('%h', hour12.toString());
+    // AM/PM (uppercase)
+    result = result.replaceAll('%AA', date.hour < 12 ? 'AM' : 'PM');
 
-      // AM/PM (uppercase)
-      result = result.replaceAll('%AA', date.hour < 12 ? 'AM' : 'PM');
+    // am/pm (lowercase)
+    result = result.replaceAll('%aa', date.hour < 12 ? 'am' : 'pm');
 
-      // am/pm (lowercase)
-      result = result.replaceAll('%aa', date.hour < 12 ? 'am' : 'pm');
+    // Minute with zero padding
+    result = result.replaceAll('%nn', date.minute.toString().padLeft(2, '0'));
 
-      // Minute with zero padding
-      result = result.replaceAll('%nn', date.minute.toString().padLeft(2, '0'));
+    // Minute
+    result = result.replaceAll('%n', date.minute.toString());
 
-      // Minute
-      result = result.replaceAll('%n', date.minute.toString());
+    // Second with zero padding
+    result = result.replaceAll('%ss', date.second.toString().padLeft(2, '0'));
 
-      // Second with zero padding
-      result = result.replaceAll('%ss', date.second.toString().padLeft(2, '0'));
+    // Second
+    result = result.replaceAll('%s', date.second.toString());
 
-      // Second
-      result = result.replaceAll('%s', date.second.toString());
+    // Weekday (abbreviated, uppercase)
+    result = result.replaceAll(
+      '%WWW',
+      _getWeekdayName(date.weekday, currentLang).substring(0, 3).toUpperCase(),
+    );
 
-      // Weekday (abbreviated, uppercase)
-      result = result.replaceAll(
-        '%WWW',
-        _getWeekdayName(date.weekday).substring(0, 3).toUpperCase(),
-      );
+    // Weekday (abbreviated)
+    result = result.replaceAll(
+      '%Www',
+      _getWeekdayName(date.weekday, currentLang).substring(0, 3),
+    );
 
-      // Weekday (abbreviated)
-      result = result.replaceAll(
-        '%Www',
-        _getWeekdayName(date.weekday).substring(0, 3),
-      );
+    // Weekday name
+    result = result.replaceAll(
+      '%W',
+      _getWeekdayName(date.weekday, currentLang),
+    );
 
-      // Weekday name
-      result = result.replaceAll('%W', _getWeekdayName(date.weekday));
+    // Weekday number
+    result = result.replaceAll('%w', date.weekday.toString());
 
-      // Weekday number
-      result = result.replaceAll('%w', date.weekday.toString());
-
-      return translateNumbers(result);
-    } finally {
-      if (currentLang != oldLang) {
-        TranslationService.setLanguage(oldLang);
-      }
-    }
+    return translateNumbers(result, language: currentLang);
   }
 
   /// Get localized month name
-  String getMonthName(int monthIndex, int yearType) {
+  String getMonthName(
+    int monthIndex,
+    int yearType, {
+    Language? language,
+  }) {
+    final currentLang = language ?? TranslationService.currentLanguage;
     const months = [
       'First Waso', // 0
       'Tagu', // 1
@@ -268,24 +267,26 @@ class FormatService {
       if (monthIndex == 4 && yearType > 0) {
         monthName = 'Second $monthName';
       }
-      final name = monthName.split(' ');
-      return name.map(TranslationService.translate).join();
+      final nameTokens = monthName.split(' ');
+      return nameTokens
+          .map((token) => TranslationService.translateTo(token, currentLang))
+          .join(' ');
     }
     return monthIndex.toString();
   }
 
   /// Get localized moon phase name
-  String _getMoonPhaseName(int phaseIndex) {
+  String _getMoonPhaseName(int phaseIndex, Language language) {
     const phases = ['Waxing', 'Full Moon', 'Waning', 'New Moon'];
 
     if (phaseIndex >= 0 && phaseIndex < phases.length) {
-      return TranslationService.translate(phases[phaseIndex]);
+      return TranslationService.translateTo(phases[phaseIndex], language);
     }
     return phaseIndex.toString();
   }
 
   /// Get localized weekday name
-  String _getWeekdayName(int weekdayIndex) {
+  String _getWeekdayName(int weekdayIndex, Language language) {
     const weekdays = [
       'Saturday', // 0
       'Sunday', // 1
@@ -297,23 +298,23 @@ class FormatService {
     ];
 
     if (weekdayIndex >= 0 && weekdayIndex < weekdays.length) {
-      return TranslationService.translate(weekdays[weekdayIndex]);
+      return TranslationService.translateTo(weekdays[weekdayIndex], language);
     }
     return weekdayIndex.toString();
   }
 
   /// Get localized year type name
-  String _getYearTypeName(int yearTypeIndex) {
+  String _getYearTypeName(int yearTypeIndex, Language language) {
     const yearTypes = ['Common Year', 'Little Watat', 'Big Watat'];
 
     if (yearTypeIndex >= 0 && yearTypeIndex < yearTypes.length) {
-      return TranslationService.translate(yearTypes[yearTypeIndex]);
+      return TranslationService.translateTo(yearTypes[yearTypeIndex], language);
     }
     return yearTypeIndex.toString();
   }
 
   /// Get localized year name from 12-year cycle
-  String _getYearName(int year) {
+  String _getYearName(int year, Language language) {
     const yearNames = [
       'Hpusha', // 0
       'Magha', // 1
@@ -330,11 +331,11 @@ class FormatService {
     ];
 
     final index = year % 12;
-    return TranslationService.translate(yearNames[index]);
+    return TranslationService.translateTo(yearNames[index], language);
   }
 
   /// Get localized Western month name
-  String _getWesternMonthName(int monthIndex) {
+  String _getWesternMonthName(int monthIndex, Language language) {
     const months = [
       '', // 0 (placeholder)
       'January', // 1
@@ -352,7 +353,7 @@ class FormatService {
     ];
 
     if (monthIndex >= 1 && monthIndex < months.length) {
-      return TranslationService.translate(months[monthIndex]);
+      return TranslationService.translateTo(months[monthIndex], language);
     }
     return monthIndex.toString();
   }
@@ -367,7 +368,7 @@ class FormatService {
       for (var i = 0; i <= 9; i++) {
         result = result.replaceAll(
           i.toString(),
-          TranslationService.translate(i.toString()),
+          TranslationService.translateTo(i.toString(), currentLang),
         );
       }
       return result;
@@ -379,69 +380,30 @@ class FormatService {
   /// Format astro information
   String formatAstroInfo(AstroInfo astro, {Language? language}) {
     final currentLang = language ?? TranslationService.currentLanguage;
-    final oldLang = TranslationService.currentLanguage;
 
-    if (currentLang != oldLang) {
-      TranslationService.setLanguage(currentLang);
-    }
+    final tokens = <String>[
+      if (astro.sabbath.isNotEmpty) astro.sabbath,
+      if (astro.yatyaza.isNotEmpty) astro.yatyaza,
+      if (astro.pyathada.isNotEmpty) astro.pyathada,
+      ...astro.astrologicalDays.where((day) => day.isNotEmpty),
+    ];
 
-    try {
-      final buffer = StringBuffer();
+    if (tokens.isEmpty) return '';
 
-      // Astrological days
-      if (astro.astrologicalDays.isNotEmpty) {
-        buffer.write(
-          astro.astrologicalDays.map(TranslationService.translate).join(', '),
-        );
-      }
-
-      // Sabbath info
-      if (astro.sabbath.isNotEmpty) {
-        if (buffer.isNotEmpty) buffer.write(', ');
-        buffer.write(TranslationService.translate(astro.sabbath));
-      }
-
-      // Other astro info
-      final astroItems = [
-        astro.yatyaza,
-        astro.pyathada,
-        ...astro.astrologicalDays,
-      ].where((item) => item.isNotEmpty).toList();
-
-      if (astroItems.isNotEmpty) {
-        if (buffer.isNotEmpty) buffer.write(', ');
-        buffer.write(
-          astroItems.map(TranslationService.translate).join(', '),
-        );
-      }
-
-      return buffer.toString();
-    } finally {
-      if (currentLang != oldLang) {
-        TranslationService.setLanguage(oldLang);
-      }
-    }
+    return tokens
+        .map((token) => TranslationService.translateTo(token, currentLang))
+        .join(', ');
   }
 
   /// Format holiday information
   String formatHolidayInfo(HolidayInfo holidays, {Language? language}) {
     final currentLang = language ?? TranslationService.currentLanguage;
-    final oldLang = TranslationService.currentLanguage;
+    final allHolidays = holidays.allHolidays;
+    if (allHolidays.isEmpty) return '';
 
-    if (currentLang != oldLang) {
-      TranslationService.setLanguage(currentLang);
-    }
-
-    try {
-      final allHolidays = holidays.allHolidays;
-      if (allHolidays.isEmpty) return '';
-
-      return allHolidays.map(TranslationService.translate).join(', ');
-    } finally {
-      if (currentLang != oldLang) {
-        TranslationService.setLanguage(oldLang);
-      }
-    }
+    return allHolidays
+        .map((holiday) => TranslationService.translateTo(holiday, currentLang))
+        .join(', ');
   }
 
   /// Format complete date information

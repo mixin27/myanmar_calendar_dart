@@ -657,6 +657,10 @@ class MyanmarCalendar {
   /// ```
   static void setLanguage(Language language) {
     _serviceInstance.setLanguage(language);
+    _chronicles = null;
+    cache
+      ..clearHolidayInfoCache()
+      ..clearCompleteDateCache();
   }
 
   /// Get the current language

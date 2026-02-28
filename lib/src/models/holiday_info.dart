@@ -1,14 +1,19 @@
 /// Contains holiday information for a given date
 class HolidayInfo {
   /// Create a new holiday info
-  const HolidayInfo({
-    required this.publicHolidays,
-    required this.religiousHolidays,
-    required this.culturalHolidays,
-    required this.otherHolidays,
-    required this.myanmarAnniversaryDays,
-    required this.otherAnniversaryDays,
-  });
+  HolidayInfo({
+    required List<String> publicHolidays,
+    required List<String> religiousHolidays,
+    required List<String> culturalHolidays,
+    required List<String> otherHolidays,
+    required List<String> myanmarAnniversaryDays,
+    required List<String> otherAnniversaryDays,
+  }) : publicHolidays = List.unmodifiable(publicHolidays),
+       religiousHolidays = List.unmodifiable(religiousHolidays),
+       culturalHolidays = List.unmodifiable(culturalHolidays),
+       otherHolidays = List.unmodifiable(otherHolidays),
+       myanmarAnniversaryDays = List.unmodifiable(myanmarAnniversaryDays),
+       otherAnniversaryDays = List.unmodifiable(otherAnniversaryDays);
 
   /// Public holidays
   final List<String> publicHolidays;
@@ -56,5 +61,35 @@ class HolidayInfo {
         'other: $otherHolidays, '
         'myanmarAnniversary: $myanmarAnniversaryDays, '
         'otherAnniversary: $otherAnniversaryDays)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is HolidayInfo &&
+        _listEquals(other.publicHolidays, publicHolidays) &&
+        _listEquals(other.religiousHolidays, religiousHolidays) &&
+        _listEquals(other.culturalHolidays, culturalHolidays) &&
+        _listEquals(other.otherHolidays, otherHolidays) &&
+        _listEquals(other.myanmarAnniversaryDays, myanmarAnniversaryDays) &&
+        _listEquals(other.otherAnniversaryDays, otherAnniversaryDays);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    Object.hashAll(publicHolidays),
+    Object.hashAll(religiousHolidays),
+    Object.hashAll(culturalHolidays),
+    Object.hashAll(otherHolidays),
+    Object.hashAll(myanmarAnniversaryDays),
+    Object.hashAll(otherAnniversaryDays),
+  );
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }

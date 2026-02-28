@@ -33,9 +33,11 @@ class HolidayCalculator {
     required CalendarCache cache,
     CalendarConfig config = const CalendarConfig(),
   }) : _cache = cache,
-       _config = config;
+       _config = config,
+       _cacheNamespace = 'holiday_info|${config.cacheNamespace}';
   late final CalendarCache _cache;
   final CalendarConfig _config;
+  final String _cacheNamespace;
 
   /// Get all holidays for a Myanmar date
   HolidayInfo getHolidays(
@@ -45,7 +47,10 @@ class HolidayCalculator {
     final key = _generateCacheKey(date, customHolidays);
 
     // Try to get from cache
-    final cached = _cache.getHolidayInfoByKey(key);
+    final cached = _cache.getHolidayInfoByKey(
+      key,
+      namespace: _cacheNamespace,
+    );
     if (cached != null) {
       return cached;
     }
@@ -54,7 +59,11 @@ class HolidayCalculator {
     final holidayInfo = _calculateHolidays(date, customHolidays);
 
     // Store in cache
-    _cache.putHolidayInfoByKey(key, holidayInfo);
+    _cache.putHolidayInfoByKey(
+      key,
+      holidayInfo,
+      namespace: _cacheNamespace,
+    );
 
     return holidayInfo;
   }
@@ -92,9 +101,11 @@ class HolidayCalculator {
               []
           ..sort();
 
-    final customHolidayIds = customHolidays.map((h) => h.id).toList()..sort();
+    final customHolidayFingerprints = customHolidays.map((holiday) {
+      return '${holiday.id}:${holiday.name}:${holiday.type.index}:${identityHashCode(holiday.predicate)}';
+    }).toList()..sort();
 
-    return '$dateKey|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayIds.join(',')}';
+    return '$dateKey|lang:${TranslationService.currentLanguage.code}|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayFingerprints.join(',')}';
   }
 
   HolidayInfo _calculateHolidays(

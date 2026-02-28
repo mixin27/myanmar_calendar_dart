@@ -63,7 +63,7 @@ class CompleteDate {
         second: westernMap['second'] as int? ?? 0,
         millisecond: westernMap['millisecond'] as int? ?? 0,
         weekday: westernMap['weekday'] as int,
-        julianDayNumber: westernMap['julianDayNumber'] as double,
+        julianDayNumber: (westernMap['julianDayNumber'] as num).toDouble(),
       ),
       myanmar: MyanmarDate(
         year: myanmarMap['year'] as int,
@@ -73,7 +73,7 @@ class CompleteDate {
         moonPhase: myanmarMap['moonPhase'] as int,
         fortnightDay: myanmarMap['fortnightDay'] as int,
         weekday: myanmarMap['weekday'] as int,
-        julianDayNumber: myanmarMap['julianDayNumber'] as double,
+        julianDayNumber: (myanmarMap['julianDayNumber'] as num).toDouble(),
         sasanaYear: myanmarMap['sasanaYear'] as int,
         monthLength: myanmarMap['monthLength'] as int,
         monthType: myanmarMap['monthType'] as int,
@@ -310,6 +310,7 @@ class CompleteDate {
 
     return other.western == western &&
         other.myanmar == myanmar &&
+        other.shan == shan &&
         other.astro == astro &&
         other.holidays == holidays;
   }
@@ -322,6 +323,7 @@ class CompleteDate {
   int get hashCode {
     return western.hashCode ^
         myanmar.hashCode ^
+        shan.hashCode ^
         astro.hashCode ^
         holidays.hashCode;
   }
@@ -445,6 +447,7 @@ class CompleteDate {
         'julianDayNumber': myanmar.julianDayNumber,
         'sasanaYear': myanmar.sasanaYear,
         'monthLength': myanmar.monthLength,
+        'monthType': myanmar.monthType,
       },
       'shan': {
         'year': shan.year,

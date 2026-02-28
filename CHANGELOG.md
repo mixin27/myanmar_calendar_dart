@@ -1,3 +1,21 @@
+## Unreleased
+
+- Refactor package documentation for Dart-only usage
+- Replace CI runtime with pure Dart commands and add `dart test` gate
+- Improve cache system:
+  - O(1) LRU bookkeeping with `LinkedHashMap`
+  - cache namespace isolation by configuration
+  - language-aware complete-date/holiday cache entries
+- Harden date validation for invalid Western month/day combinations
+- Make `HolidayInfo` and `AstroInfo` list fields immutable
+- Improve `CompleteDate` model consistency:
+  - include Shan date in equality/hashCode
+  - include `monthType` in serialized Myanmar map
+  - accept integer JDN values in `fromMap`
+- Fix publish workflow tag trigger pattern
+- Add regression tests for cache isolation, localization cache behavior,
+  invalid dates, and model immutability
+
 ## 1.1.5
 
 - Add `disabledHolidaysByDate` config
