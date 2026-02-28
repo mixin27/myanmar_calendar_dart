@@ -81,17 +81,17 @@ void main() {
     });
 
     test('should work with custom holidays while built-in is disabled', () {
-      final extraHoliday = CustomHoliday(
+      final extraHoliday = CustomHoliday.westernDate(
         id: 'extra',
         name: 'Extra',
         type: HolidayType.public,
-        predicate: (myanmarDate, westernDate) =>
-            westernDate.day == 4 && westernDate.month == 1,
+        month: 1,
+        day: 4,
       );
 
       MyanmarCalendar.configure(
         disabledHolidays: [HolidayId.independenceDay],
-        customHolidays: [extraHoliday],
+        customHolidayRules: [extraHoliday],
       );
 
       final date = MyanmarCalendar.fromWestern(2024, 1, 4);

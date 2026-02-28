@@ -37,7 +37,7 @@ void main() {
 - Complete date object (Myanmar, Western, Shan, holidays, astro)
 - Myanmar and Western date formatting with localization
 - Built-in holidays with flexible disabling rules
-- Custom holiday predicates
+- Custom holiday rules (typed matcher + date-rule helpers)
 - Pluggable western holiday provider (Eid/Diwali/Chinese New Year)
 - Chronicle and dynasty lookup APIs
 - Cache controls for throughput and memory tuning
@@ -101,21 +101,39 @@ final parsedWestern = MyanmarCalendar.parseWestern('2024-01-01');
 ### Add custom holidays
 
 ```dart
-final myHoliday = CustomHoliday(
+final myHoliday = CustomHoliday.westernDate(
   id: 'team_day',
   name: 'Team Day',
   type: HolidayType.cultural,
+  month: 7,
+  day: 27,
   cacheVersion: 1,
-  predicate: (myanmarDate, westernDate) {
-    return westernDate.month == 7 && westernDate.day == 27;
-  },
 );
 
-MyanmarCalendar.configure(customHolidays: [myHoliday]);
+MyanmarCalendar.configure(customHolidayRules: [myHoliday]);
 ```
 
 When you change predicate logic but keep the same holiday ID, increment
 `cacheVersion` so cached holiday results are invalidated deterministically.
+
+You can also write a typed matcher directly:
+
+```dart
+final fullMoonFestival = CustomHoliday(
+  id: 'full_moon_festival',
+  name: 'Full Moon Festival',
+  type: HolidayType.cultural,
+  cacheVersion: 1,
+  localizedNames: {
+    Language.myanmar: 'လပြည့်ပွဲ',
+  },
+  matcher: (context) {
+    return context.myanmarDate.moonPhase == 1 && context.myanmarDate.day == 15;
+  },
+);
+```
+
+Legacy `predicate: (myanmarDate, westernDate) { ... }` is deprecated.
 
 ### Disable built-in holidays
 
@@ -183,6 +201,116 @@ class MyHolidayProvider extends WesternHolidayProvider {
   }
 }
 ```
+
+### Remote Configuration (Firebase or Backend)
+
+You can deliver custom holiday rules dynamically from Firebase Remote Config
+(Flutter apps) or any backend API (pure Dart/server apps).
+
+Suggested JSON payload:
+
+```json
+{
+  "holidayRules": [
+    {
+      "id": "team_day",
+      "name": "Team Day",
+      "type": "cultural",
+      "kind": "western_fixed",
+      "month": 7,
+      "day": 27,
+      "cacheVersion": 1,
+      "localizedNames": {
+        "my": "အသင်းနေ့"
+      }
+    }
+  ]
+}
+```
+
+Map remote payload to `CustomHoliday` rules:
+
+```dart
+import 'dart:convert';
+import 'package:myanmar_calendar_dart/myanmar_calendar_dart.dart';
+
+HolidayType _holidayTypeFromString(String value) {
+  return HolidayType.values.firstWhere(
+    (type) => type.name == value,
+    orElse: () => HolidayType.other,
+  );
+}
+
+Map<Language, String> _localizedNames(dynamic raw) {
+  if (raw is! Map<String, dynamic>) return const {};
+  final result = <Language, String>{};
+  for (final entry in raw.entries) {
+    result[Language.fromCode(entry.key)] = entry.value as String;
+  }
+  return result;
+}
+
+List<CustomHoliday> parseHolidayRules(Map<String, dynamic> payload) {
+  final rules = payload['holidayRules'] as List<dynamic>? ?? const [];
+  return rules.map((raw) {
+    final item = raw as Map<String, dynamic>;
+    final id = item['id'] as String;
+    final name = item['name'] as String;
+    final type = _holidayTypeFromString(item['type'] as String? ?? 'other');
+    final cacheVersion = item['cacheVersion'] as int? ?? 1;
+    final localized = _localizedNames(item['localizedNames']);
+    final kind = item['kind'] as String? ?? 'western_fixed';
+
+    if (kind == 'myanmar_fixed') {
+      return CustomHoliday.myanmarDate(
+        id: id,
+        name: name,
+        type: type,
+        month: item['month'] as int,
+        day: item['day'] as int,
+        year: item['year'] as int?,
+        fromYear: item['fromYear'] as int?,
+        toYear: item['toYear'] as int?,
+        cacheVersion: cacheVersion,
+        localizedNames: localized,
+      );
+    }
+
+    return CustomHoliday.westernDate(
+      id: id,
+      name: name,
+      type: type,
+      month: item['month'] as int,
+      day: item['day'] as int,
+      year: item['year'] as int?,
+      fromYear: item['fromYear'] as int?,
+      toYear: item['toYear'] as int?,
+      cacheVersion: cacheVersion,
+      localizedNames: localized,
+    );
+  }).toList();
+}
+```
+
+Apply rules from Firebase Remote Config (Flutter app):
+
+```dart
+final jsonString = remoteConfig.getString('myanmar_calendar_rules');
+final payload = jsonDecode(jsonString) as Map<String, dynamic>;
+final rules = parseHolidayRules(payload);
+MyanmarCalendar.configure(customHolidayRules: rules);
+```
+
+Apply rules from a custom backend:
+
+```dart
+final response = await client.get(Uri.parse('https://api.example.com/calendar/rules'));
+final payload = jsonDecode(response.body) as Map<String, dynamic>;
+final rules = parseHolidayRules(payload);
+MyanmarCalendar.configure(customHolidayRules: rules);
+```
+
+When remote rule logic changes, increment `cacheVersion` for each changed rule.
 
 ## Caching
 

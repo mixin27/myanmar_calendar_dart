@@ -407,7 +407,7 @@ class MyanmarDateTime {
   HolidayInfo get holidayInfo {
     _holidayInfo ??= _holidayCalculator.getHolidays(
       myanmarDate,
-      customHolidays: config.customHolidays,
+      customHolidays: config.customHolidayRules,
       language: Language.fromCode(config.defaultLanguage),
     );
     return _holidayInfo!;

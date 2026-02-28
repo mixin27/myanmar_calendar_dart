@@ -112,7 +112,7 @@ void main() {
         name: 'Team Day',
         type: HolidayType.cultural,
         cacheVersion: 1,
-        predicate: (myanmarDate, westernDate) => westernDate.month == 7,
+        matcher: (context) => context.westernDate.month == 7,
       );
 
       final holidayB = CustomHoliday(
@@ -120,7 +120,7 @@ void main() {
         name: 'Team Day',
         type: HolidayType.cultural,
         cacheVersion: 1,
-        predicate: (myanmarDate, westernDate) => westernDate.day == 27,
+        matcher: (context) => context.westernDate.day == 27,
       );
 
       final holidayC = CustomHoliday(
@@ -128,7 +128,7 @@ void main() {
         name: 'Team Day',
         type: HolidayType.cultural,
         cacheVersion: 2,
-        predicate: (myanmarDate, westernDate) => westernDate.day == 27,
+        matcher: (context) => context.westernDate.day == 27,
       );
 
       final namespaceA = CalendarConfig(

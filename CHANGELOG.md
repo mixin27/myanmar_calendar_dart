@@ -10,6 +10,12 @@
 - Harden date validation for invalid Western month/day combinations
 - Fix Sasana year calculation for `sasanaYearType=1` on late months
 - Add pluggable `WesternHolidayProvider` and table-driven default rules
+- Refactor custom holiday system:
+  - add typed `CustomHolidayContext` matcher API
+  - add `CustomHoliday.westernDate` and `CustomHoliday.myanmarDate` builders
+  - add localized custom holiday names via `localizedNames`
+  - deprecate legacy `predicate`-based API in favor of matcher/context
+  - add `customHolidayRules` configure alias and rule-oriented management APIs
 - Make `HolidayInfo` and `AstroInfo` list fields immutable
 - Improve `CompleteDate` model consistency:
   - include Shan date in equality/hashCode

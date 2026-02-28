@@ -110,7 +110,7 @@ class HolidayCalculator {
           ..sort();
 
     final customHolidayFingerprints = customHolidays.map((holiday) {
-      return '${holiday.cacheFingerprint}:${holiday.name}:${holiday.type.index}';
+      return holiday.cacheDescriptor;
     }).toList()..sort();
 
     return '$dateKey|lang:${language.code}|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayFingerprints.join(',')}';
@@ -190,6 +190,7 @@ class HolidayCalculator {
       otherHolidays,
       myanmarAnniversaryDays,
       otherAnniversaryDays,
+      language,
     );
 
     return HolidayInfo(
@@ -913,6 +914,7 @@ class HolidayCalculator {
     List<String> otherHolidays,
     List<String> myanmarAnniversaryDays,
     List<String> otherAnniversaryDays,
+    Language language,
   ) {
     if (customHolidays.isEmpty) return;
 
@@ -931,26 +933,32 @@ class HolidayCalculator {
       julianDayNumber: westernJdn,
     );
 
+    final context = CustomHolidayContext(
+      myanmarDate: myanmarDate,
+      westernDate: westernDateObj,
+    );
+
     for (final holiday in customHolidays) {
-      if (holiday.predicate(myanmarDate, westernDateObj)) {
+      if (holiday.matches(context)) {
+        final holidayName = holiday.nameFor(language);
         switch (holiday.type) {
           case HolidayType.public:
-            publicHolidays.add(holiday.name);
+            publicHolidays.add(holidayName);
             break;
           case HolidayType.religious:
-            religiousHolidays.add(holiday.name);
+            religiousHolidays.add(holidayName);
             break;
           case HolidayType.cultural:
-            culturalHolidays.add(holiday.name);
+            culturalHolidays.add(holidayName);
             break;
           case HolidayType.other:
-            otherHolidays.add(holiday.name);
+            otherHolidays.add(holidayName);
             break;
           case HolidayType.myanmarAnniversary:
-            myanmarAnniversaryDays.add(holiday.name);
+            myanmarAnniversaryDays.add(holidayName);
             break;
           case HolidayType.otherAnniversary:
-            otherAnniversaryDays.add(holiday.name);
+            otherAnniversaryDays.add(holidayName);
             break;
         }
       }

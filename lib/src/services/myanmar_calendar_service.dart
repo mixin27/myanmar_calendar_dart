@@ -194,7 +194,7 @@ class MyanmarCalendarService {
   HolidayInfo getHolidayInfo(MyanmarDate date) {
     return _holidayCalculator.getHolidays(
       date,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
       language: _currentLanguage,
     );
   }
@@ -233,7 +233,7 @@ class MyanmarCalendarService {
     // Try to get from cache
     final cached = _cache.getCompleteDate(
       dateTime,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
       namespace: completeDateNamespace,
     );
     if (cached != null) {
@@ -249,7 +249,7 @@ class MyanmarCalendarService {
     final astroInfo = _astroCalculator.calculate(myanmarDate);
     final holidayInfo = _holidayCalculator.getHolidays(
       myanmarDate,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
       language: _currentLanguage,
     );
 
@@ -265,7 +265,7 @@ class MyanmarCalendarService {
     _cache.putCompleteDate(
       dateTime,
       completeDate,
-      customHolidays: _config.customHolidays,
+      customHolidays: _config.customHolidayRules,
       namespace: completeDateNamespace,
     );
 

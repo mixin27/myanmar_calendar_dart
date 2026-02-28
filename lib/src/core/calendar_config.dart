@@ -84,6 +84,11 @@ class CalendarConfig {
   /// Custom holidays defined by the consumer
   final List<CustomHoliday> customHolidays;
 
+  /// Custom holiday rules defined by the consumer.
+  ///
+  /// This is the preferred naming over [customHolidays].
+  List<CustomHoliday> get customHolidayRules => customHolidays;
+
   /// List of built-in holidays to disable globally
   final List<HolidayId> disabledHolidays;
 
@@ -131,7 +136,7 @@ class CalendarConfig {
         .join('|');
 
     final customHolidayKey = customHolidays.map((holiday) {
-      return '${holiday.cacheFingerprint}:${holiday.name}:${holiday.type.index}';
+      return holiday.cacheDescriptor;
     }).toList()..sort();
     final customHolidayFingerprint = customHolidayKey.join('|');
 
@@ -154,19 +159,23 @@ class CalendarConfig {
     int? gregorianStart,
     double? timezoneOffset,
     String? defaultLanguage,
+    List<CustomHoliday>? customHolidayRules,
+    @Deprecated('Use customHolidayRules instead.')
     List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
     WesternHolidayProvider? westernHolidayProvider,
   }) {
+    final resolvedCustomHolidayRules = customHolidayRules ?? customHolidays;
+
     return CalendarConfig(
       sasanaYearType: sasanaYearType ?? this.sasanaYearType,
       calendarType: calendarType ?? this.calendarType,
       gregorianStart: gregorianStart ?? this.gregorianStart,
       timezoneOffset: timezoneOffset ?? this.timezoneOffset,
       defaultLanguage: defaultLanguage ?? this.defaultLanguage,
-      customHolidays: customHolidays ?? this.customHolidays,
+      customHolidays: resolvedCustomHolidayRules ?? this.customHolidays,
       disabledHolidays: disabledHolidays ?? this.disabledHolidays,
       disabledHolidaysByYear:
           disabledHolidaysByYear ?? this.disabledHolidaysByYear,

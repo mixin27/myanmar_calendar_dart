@@ -74,7 +74,8 @@ class MyanmarCalendar {
   /// [sasanaYearType] - Sasana year calculation method (0, 1, or 2)
   /// [calendarType] - Calendar system (0=British, 1=Gregorian, 2=Julian)
   /// [gregorianStart] - Julian Day Number of Gregorian calendar start
-  /// [customHolidays] - List of custom holidays defined by the consumer
+  /// [customHolidayRules] - List of custom holiday rules defined by the consumer
+  /// [customHolidays] - Legacy alias for [customHolidayRules]
   /// [disabledHolidays] - List of built-in holidays to disable globally
   /// [disabledHolidaysByYear] - Map of Western year to list of built-in holidays to disable for that specific year
   /// [disabledHolidaysByDate] - Map of Western date (YYYY-MM-DD) to list of built-in holidays to disable for that specific date
@@ -85,12 +86,16 @@ class MyanmarCalendar {
     int? sasanaYearType,
     int? calendarType,
     int? gregorianStart,
+    List<CustomHoliday>? customHolidayRules,
+    @Deprecated('Use customHolidayRules instead.')
     List<CustomHoliday>? customHolidays,
     List<HolidayId>? disabledHolidays,
     Map<int, List<HolidayId>>? disabledHolidaysByYear,
     Map<String, List<HolidayId>>? disabledHolidaysByDate,
     WesternHolidayProvider? westernHolidayProvider,
   }) {
+    final resolvedCustomHolidayRules = customHolidayRules ?? customHolidays;
+
     // Update configuration
     CalendarConfig.global = CalendarConfig.global.copyWith(
       defaultLanguage: language?.code,
@@ -98,7 +103,7 @@ class MyanmarCalendar {
       sasanaYearType: sasanaYearType,
       calendarType: calendarType,
       gregorianStart: gregorianStart,
-      customHolidays: customHolidays,
+      customHolidayRules: resolvedCustomHolidayRules,
       disabledHolidays: disabledHolidays,
       disabledHolidaysByYear: disabledHolidaysByYear,
       disabledHolidaysByDate: disabledHolidaysByDate,
@@ -116,10 +121,10 @@ class MyanmarCalendar {
       ..clearCompleteDateCache();
   }
 
-  /// Add a custom holiday to the configuration
-  static void addCustomHoliday(CustomHoliday holiday) {
+  /// Add one custom holiday rule to the configuration.
+  static void addCustomHolidayRule(CustomHoliday rule) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: [...CalendarConfig.global.customHolidays, holiday],
+      customHolidayRules: [...CalendarConfig.global.customHolidayRules, rule],
     );
     _service = null;
     MyanmarDateTime.clearSharedInstances();
@@ -128,10 +133,13 @@ class MyanmarCalendar {
       ..clearCompleteDateCache();
   }
 
-  /// Add multiple custom holidays to the configuration
-  static void addCustomHolidays(List<CustomHoliday> holidays) {
+  /// Add multiple custom holiday rules to the configuration.
+  static void addCustomHolidayRules(List<CustomHoliday> rules) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: [...CalendarConfig.global.customHolidays, ...holidays],
+      customHolidayRules: [
+        ...CalendarConfig.global.customHolidayRules,
+        ...rules,
+      ],
     );
     _service = null;
     MyanmarDateTime.clearSharedInstances();
@@ -140,11 +148,11 @@ class MyanmarCalendar {
       ..clearCompleteDateCache();
   }
 
-  /// Remove a custom holiday from the configuration
-  static void removeCustomHoliday(CustomHoliday holiday) {
+  /// Remove a custom holiday rule by [id].
+  static void removeCustomHolidayRuleById(String id) {
     CalendarConfig.global = CalendarConfig.global.copyWith(
-      customHolidays: CalendarConfig.global.customHolidays
-          .where((h) => h.id != holiday.id)
+      customHolidayRules: CalendarConfig.global.customHolidayRules
+          .where((h) => h.id != id)
           .toList(),
     );
     _service = null;
@@ -154,14 +162,40 @@ class MyanmarCalendar {
       ..clearCompleteDateCache();
   }
 
-  /// Remove all custom holidays from the configuration
-  static void clearCustomHolidays() {
-    CalendarConfig.global = CalendarConfig.global.copyWith(customHolidays: []);
+  /// Remove all custom holiday rules from the configuration.
+  static void clearCustomHolidayRules() {
+    CalendarConfig.global = CalendarConfig.global.copyWith(
+      customHolidayRules: [],
+    );
     _service = null;
     MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
       ..clearCompleteDateCache();
+  }
+
+  /// Add a custom holiday to the configuration.
+  @Deprecated('Use addCustomHolidayRule instead.')
+  static void addCustomHoliday(CustomHoliday holiday) {
+    addCustomHolidayRule(holiday);
+  }
+
+  /// Add multiple custom holidays to the configuration.
+  @Deprecated('Use addCustomHolidayRules instead.')
+  static void addCustomHolidays(List<CustomHoliday> holidays) {
+    addCustomHolidayRules(holidays);
+  }
+
+  /// Remove a custom holiday from the configuration.
+  @Deprecated('Use removeCustomHolidayRuleById instead.')
+  static void removeCustomHoliday(CustomHoliday holiday) {
+    removeCustomHolidayRuleById(holiday.id);
+  }
+
+  /// Remove all custom holidays from the configuration.
+  @Deprecated('Use clearCustomHolidayRules instead.')
+  static void clearCustomHolidays() {
+    clearCustomHolidayRules();
   }
 
   /// Get current configuration

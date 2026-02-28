@@ -505,8 +505,9 @@ class CalendarCache {
     );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
 
-    final holidayIds = customHolidays.map((h) => h.id).toList()..sort();
-    return '$dateKey|${holidayIds.join(',')}';
+    final holidayDescriptors =
+        customHolidays.map((h) => h.cacheDescriptor).toList()..sort();
+    return '$dateKey|${holidayDescriptors.join(',')}';
   }
 
   String _namespaceKey(String key, String namespace) {

@@ -5,14 +5,13 @@ void main() {
   MyanmarCalendar.configure(
     language: Language.english,
     timezoneOffset: 0, // Myanmar Standard Time
-    customHolidays: [
-      CustomHoliday(
+    customHolidayRules: [
+      CustomHoliday.westernDate(
         id: 'my_birthday',
         name: 'My Birthday',
         type: HolidayType.other,
-        predicate: (myanmarDate, westernDate) {
-          return westernDate.day == 27 && westernDate.month == 7;
-        },
+        month: 7,
+        day: 27,
       ),
     ],
   );

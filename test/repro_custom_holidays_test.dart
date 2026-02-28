@@ -12,24 +12,26 @@ void main() {
       final date15 = DateTime(2024, 1, 15);
 
       // 1. First call with custom holiday
-      final holiday = CustomHoliday(
+      final holiday = CustomHoliday.westernDate(
         id: 'h1',
         name: 'Holiday 1',
         type: HolidayType.other,
-        predicate: (m, w) => w.day == 15,
+        month: 1,
+        day: 15,
       );
-      MyanmarCalendar.configure(customHolidays: [holiday]);
+      MyanmarCalendar.configure(customHolidayRules: [holiday]);
       final d1 = MyanmarCalendar.fromDateTime(date15);
       expect(d1.otherHolidays, contains('Holiday 1'));
 
       // 2. Second call with DIFFERENT custom holiday for SAME date
-      final holiday2 = CustomHoliday(
+      final holiday2 = CustomHoliday.westernDate(
         id: 'h2',
         name: 'Holiday 2',
         type: HolidayType.other,
-        predicate: (m, w) => w.day == 15,
+        month: 1,
+        day: 15,
       );
-      MyanmarCalendar.configure(customHolidays: [holiday2]);
+      MyanmarCalendar.configure(customHolidayRules: [holiday2]);
       final d2 = MyanmarCalendar.fromDateTime(date15);
 
       // If caching is broken, this will contain 'Holiday 1' instead of 'Holiday 2'
@@ -47,13 +49,14 @@ void main() {
     });
 
     test('MyanmarCalendar.getHolidayInfo should support custom holidays', () {
-      final holiday = CustomHoliday(
+      final holiday = CustomHoliday.westernDate(
         id: 'h1',
         name: 'Holiday 1',
         type: HolidayType.other,
-        predicate: (m, w) => w.day == 15,
+        month: 1,
+        day: 15,
       );
-      MyanmarCalendar.configure(customHolidays: [holiday]);
+      MyanmarCalendar.configure(customHolidayRules: [holiday]);
 
       final mDate = MyanmarCalendar.fromWestern(2024, 1, 15).myanmarDate;
       final hInfo = MyanmarCalendar.getHolidayInfo(mDate);
@@ -69,26 +72,28 @@ void main() {
       final date15 = DateTime(2024, 1, 15);
 
       // 1. Initial configuration
-      final holidayV1 = CustomHoliday(
+      final holidayV1 = CustomHoliday.westernDate(
         id: 'reuse_id',
         name: 'V1',
         type: HolidayType.other,
-        predicate: (m, w) => w.day == 15,
+        month: 1,
+        day: 15,
       );
-      MyanmarCalendar.configure(customHolidays: [holidayV1]);
+      MyanmarCalendar.configure(customHolidayRules: [holidayV1]);
       expect(
         MyanmarCalendar.fromDateTime(date15).otherHolidays,
         contains('V1'),
       );
 
       // 2. Modify with same ID but different name
-      final holidayV2 = CustomHoliday(
+      final holidayV2 = CustomHoliday.westernDate(
         id: 'reuse_id',
         name: 'V2',
         type: HolidayType.other,
-        predicate: (m, w) => w.day == 15,
+        month: 1,
+        day: 15,
       );
-      MyanmarCalendar.configure(customHolidays: [holidayV2]);
+      MyanmarCalendar.configure(customHolidayRules: [holidayV2]);
 
       // Should show V2 if cache was cleared correctly
       expect(
