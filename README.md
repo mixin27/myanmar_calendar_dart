@@ -6,6 +6,11 @@
 A pure Dart package for Myanmar calendar calculation, conversion, formatting,
 holiday rules, and astrological information.
 
+## Migration
+
+Upgrading from v1? See the migration guide:
+[MIGRATION.md](MIGRATION.md)
+
 ## Installation
 
 ```sh

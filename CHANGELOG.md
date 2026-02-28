@@ -1,4 +1,4 @@
-## Unreleased
+## 2.0.0
 
 - Refactor package documentation for Dart-only usage
 - Replace CI runtime with pure Dart commands and add `dart test` gate
