@@ -1,3 +1,8 @@
+## 2.0.1
+
+- Fix translation data for special months such as `Late Tagu`, `Late Kason` and `First Waso`
+- Fix short form of months and weekdays with appropriate translations
+
 ## 2.0.0
 
 - Refactor package documentation for Dart-only usage

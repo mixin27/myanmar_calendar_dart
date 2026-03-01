@@ -20,6 +20,115 @@ import 'package:myanmar_calendar_dart/src/localization/translation_data.dart';
 /// Service for translating text between different languages
 class TranslationService {
   static const Language _defaultLanguage = Language.english;
+  static const Map<Language, List<String>> _shortWesternMonthsByLanguage = {
+    Language.english: [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ],
+    Language.myanmar: [
+      '',
+      'ဇန်',
+      'ဖေ',
+      'မတ်',
+      'ဧပြီ',
+      'မေ',
+      'ဇွန်',
+      'ဇူ',
+      'ဩ',
+      'စက်',
+      'အောက်',
+      'နို',
+      'ဒီ',
+    ],
+    Language.zawgyi: [
+      '',
+      'ဇန္',
+      'ေဖ',
+      'မတ္',
+      'ဧၿပီ',
+      'ေမ',
+      'ဇြန္',
+      'ဇူ',
+      'ဩ',
+      'စက္',
+      'ေအာက္',
+      'ႏို',
+      'ဒီ',
+    ],
+    Language.mon: [
+      '',
+      'ဂျာန်',
+      'ဝှေဝ်',
+      'မာတ်ချ်',
+      'ဨပြေ',
+      'မေ',
+      'ဂျုန်',
+      'ဂျူ',
+      'အဝ်',
+      'သိတ်',
+      'အံက်',
+      'နဝ်',
+      'ဒီ',
+    ],
+    Language.shan: [
+      '',
+      'ၶၸၼ်ႇ',
+      'ၾႅပ်ႉ',
+      'မျၢတ်ႉ',
+      'ဢေႇ',
+      'မေ',
+      'ၵျုၼ်ႇ',
+      'ၵျူႇ',
+      'ဢေႃး',
+      'သႅပ်ႇ',
+      'ဢွၵ်ႇ',
+      'ၼူဝ်ႇ',
+      'တီႇ',
+    ],
+    Language.karen: [
+      '',
+      'ယနူၤ',
+      'ဖ့ၤ',
+      'မၢ်ၡး',
+      'အ့',
+      'မ့ၤ',
+      'ယူၤ',
+      'ယူၤလံ',
+      'အီ',
+      'စဲး',
+      'အီး',
+      'နိၣ်',
+      'ဒံၣ်',
+    ],
+  };
+
+  static const Map<Language, List<String>> _shortWeekdaysByLanguage = {
+    Language.english: ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    Language.myanmar: ['စနေ', 'နွေ', 'လာ', 'ဂါ', 'ဟူး', 'ကြာ', 'သော'],
+    Language.zawgyi: ['စေန', 'ေႏြ', 'လာ', 'ဂါ', 'ဟူး', 'ၾကာ', 'ေသာ'],
+    Language.mon: [
+      'သ္ၚိသဝ်',
+      'အဒိုတ်',
+      'စန်',
+      'အင္ၚာ',
+      'ဗုဒ္ဓဝါ',
+      'ဗြဴဗတိ',
+      'သိုက်',
+    ],
+    Language.shan: ['သဝ်', 'ဢႃး', 'ၸၼ်', 'ဢၢင်း', 'ပုတ်ႉ', 'ၽတ်း', 'သုၵ်း'],
+    Language.karen: ['ဘူၣ်', 'ဒဲး', 'ဆၣ်', 'ယူာ်', 'ပျဲၤ', 'လ့ၤ', 'ဖီဖး'],
+  };
 
   /// Translate a key to a specific language
   static String translateTo(String key, Language language) {
@@ -86,8 +195,9 @@ class TranslationService {
     ];
 
     if (monthIndex >= 0 && monthIndex < months.length) {
-      var monthName = TranslationService.translateTo(
+      var monthName = _translateMonthNameWithFallback(
         months[monthIndex],
+        monthIndex,
         language,
       );
 
@@ -100,6 +210,29 @@ class TranslationService {
       return monthName;
     }
     return monthIndex.toString();
+  }
+
+  static String _translateMonthNameWithFallback(
+    String monthKey,
+    int monthIndex,
+    Language language,
+  ) {
+    final direct = TranslationService.translateTo(monthKey, language);
+    if (direct != monthKey) return direct;
+
+    switch (monthIndex) {
+      case 0:
+        return '${TranslationService.translateTo('First', language)} '
+            '${TranslationService.translateTo('Waso', language)}';
+      case 13:
+        return '${TranslationService.translateTo('Late', language)} '
+            '${TranslationService.translateTo('Tagu', language)}';
+      case 14:
+        return '${TranslationService.translateTo('Late', language)} '
+            '${TranslationService.translateTo('Kason', language)}';
+      default:
+        return monthKey;
+    }
   }
 
   /// Get western month name by month number (1-12)
@@ -130,24 +263,12 @@ class TranslationService {
   /// Get short western month name by month number (1-12)
   static String getShortWesternMonthName(int monthIndex, [Language? language]) {
     language ??= _defaultLanguage;
-    const months = [
-      '', // 0 placeholder
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
+    final months =
+        _shortWesternMonthsByLanguage[language] ??
+        _shortWesternMonthsByLanguage[_defaultLanguage]!;
 
     if (monthIndex >= 1 && monthIndex < months.length) {
-      return translateTo(months[monthIndex], language);
+      return months[monthIndex];
     }
     return monthIndex.toString();
   }
@@ -174,10 +295,12 @@ class TranslationService {
   /// Get short weekday name by index (0-6)
   static String getShortWeekdayName(int weekdayIndex, [Language? language]) {
     language ??= _defaultLanguage;
-    const weekdays = ['wSat', 'wSun', 'wMon', 'wTue', 'wWed', 'wThu', 'wFri'];
+    final weekdays =
+        _shortWeekdaysByLanguage[language] ??
+        _shortWeekdaysByLanguage[_defaultLanguage]!;
 
     if (weekdayIndex >= 0 && weekdayIndex < weekdays.length) {
-      return translateTo(weekdays[weekdayIndex], language);
+      return weekdays[weekdayIndex];
     }
     return weekdayIndex.toString();
   }

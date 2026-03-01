@@ -17,7 +17,7 @@ class PackageConstants {
   static const String packageName = 'myanmar_calendar_dart';
 
   /// Package version
-  static const String version = '1.1.5';
+  static const String version = '2.0.1';
 
   /// Package description
   static const String description =
