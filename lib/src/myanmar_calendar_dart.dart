@@ -1,6 +1,7 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/core/myanmar_date_time.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
@@ -365,41 +366,42 @@ class MyanmarCalendar {
   // PARSING METHODS
   // ============================================================================
 
-  /// Parse Myanmar date string
+  /// Parse a Myanmar date string, written year first (`1385/10/1`,
+  /// `1385-10-1`) or day first (`1.10.1385`); Myanmar digits work too.
   ///
-  /// Attempts to parse various Myanmar date string formats.
-  /// Returns null if parsing fails.
-  ///
-  /// Supported formats:
-  /// - "1385/10/1"
-  /// - "1385-10-1"
-  /// - "1.10.1385"
-  ///
-  /// Example:
-  /// ```dart
-  /// final date = MyanmarCalendar.parseMyanmar('1385/10/1');
-  /// if (date != null) {
-  ///   print('Parsed: ${date.formatMyanmar()}');
-  /// }
-  /// ```
-  static MyanmarDateTime? parseMyanmar(String dateString) {
-    return MyanmarDateTime.parseMyanmar(dateString, config: config);
+  /// Throws [DateParseException] if the string isn't a date that exists.
+  /// Use [tryParseMyanmar] to get null instead.
+  static MyanmarDateTime parseMyanmar(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    return _clientFor(config).parseMyanmar(dateString);
   }
 
-  /// Parse Western date string
+  /// Like [parseMyanmar], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseMyanmar(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    return _clientFor(config).tryParseMyanmar(dateString);
+  }
+
+  /// Parse an ISO 8601 Western date string (as `DateTime.parse` does).
   ///
-  /// Attempts to parse Western date string using Dart's DateTime.parse.
-  /// Returns null if parsing fails.
-  ///
-  /// Example:
-  /// ```dart
-  /// final date = MyanmarCalendar.parseWestern('2024-01-01');
-  /// if (date != null) {
-  ///   print('Parsed: ${date.formatWestern()}');
-  /// }
-  /// ```
-  static MyanmarDateTime? parseWestern(String dateString) {
-    return MyanmarDateTime.parseWestern(dateString, config: config);
+  /// Throws [DateParseException]; use [tryParseWestern] to get null instead.
+  static MyanmarDateTime parseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    return _clientFor(config).parseWestern(dateString);
+  }
+
+  /// Like [parseWestern], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    return _clientFor(config).tryParseWestern(dateString);
   }
 
   // ============================================================================

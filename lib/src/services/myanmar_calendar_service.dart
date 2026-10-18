@@ -1,5 +1,6 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
@@ -428,10 +429,7 @@ class MyanmarCalendarService {
       }
 
       return const ValidationResult(isValid: true);
-      // The package reports invalid input with ArgumentError; here it is
-      // the answer, not a failure.
-      // ignore: avoid_catching_errors
-    } on ArgumentError catch (e) {
+    } on InvalidMyanmarDateException catch (e) {
       // myanmarToJulian rejects days the month doesn't have.
       return ValidationResult(
         isValid: false,

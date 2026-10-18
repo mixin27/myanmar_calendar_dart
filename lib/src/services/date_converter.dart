@@ -16,6 +16,7 @@ library;
 
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_year_info.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
@@ -336,13 +337,21 @@ class DateConverter {
     // of a 29-day month became day 29; First Waso in a common year became
     // Waso), so a typo produced a real but different day.
     if (day > monthLength) {
-      throw ArgumentError(
-        'Myanmar month $month of $year has $monthLength days, not $day',
+      throw InvalidMyanmarDateException(
+        year: year,
+        month: month,
+        day: day,
+        customMessage:
+            'Myanmar month $month of $year has $monthLength days, not $day',
       );
     }
     if (month == 0 && yearInfo['myt'] == 0) {
-      throw ArgumentError(
-        'First Waso (month 0) only exists in watat years; $year is common',
+      throw InvalidMyanmarDateException(
+        year: year,
+        month: month,
+        day: day,
+        customMessage:
+            'First Waso (month 0) only exists in watat years; $year is common',
       );
     }
 
@@ -630,25 +639,21 @@ class DateConverter {
     int minute,
     int second,
   ) {
-    if (year < 1 || year > 9999) {
-      throw ArgumentError('Invalid Western year: $year');
-    }
-    if (month < 1 || month > 12) {
-      throw ArgumentError('Invalid Western month: $month');
-    }
+    Never invalid(String message) => throw InvalidWesternDateException(
+      year: year,
+      month: month,
+      day: day,
+      customMessage: message,
+    );
+    if (year < 1 || year > 9999) invalid('Invalid Western year: $year');
+    if (month < 1 || month > 12) invalid('Invalid Western month: $month');
     final maxDay = _getDaysInWesternMonth(year, month);
     if (day < 1 || day > maxDay) {
-      throw ArgumentError(
-        'Invalid Western day: $day for year $year month $month',
-      );
+      invalid('Invalid Western day: $day for year $year month $month');
     }
-    if (hour < 0 || hour > 23) throw ArgumentError('Invalid hour: $hour');
-    if (minute < 0 || minute > 59) {
-      throw ArgumentError('Invalid minute: $minute');
-    }
-    if (second < 0 || second > 59) {
-      throw ArgumentError('Invalid second: $second');
-    }
+    if (hour < 0 || hour > 23) invalid('Invalid hour: $hour');
+    if (minute < 0 || minute > 59) invalid('Invalid minute: $minute');
+    if (second < 0 || second > 59) invalid('Invalid second: $second');
   }
 
   int _getDaysInWesternMonth(int year, int month) {
@@ -674,30 +679,41 @@ class DateConverter {
   }
 
   bool _isWesternLeapYear(int year) {
-    if (_config.calendarType == CalendarConstants.calendarTypeJulian) {
-      return year % 4 == 0;
-    }
+    // The British calendar is Julian until September 1752, so 1700 had a
+    // 29 February.
+    final julian =
+        _config.calendarType == CalendarConstants.calendarTypeJulian ||
+        (_config.calendarType == CalendarConstants.calendarTypeBritish &&
+            year < 1753);
+    if (julian) return year % 4 == 0;
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
   }
 
   /// Validate Myanmar date
   void _validateMyanmarDate(int year, int month, int day) {
+    String? problem;
     if (year < PackageConstants.minMyanmarYear ||
         year > PackageConstants.maxMyanmarYear) {
-      throw ArgumentError(
-        'Myanmar year must be between ${PackageConstants.minMyanmarYear} and ${PackageConstants.maxMyanmarYear}',
-      );
-    }
-    if (month < PackageConstants.minMyanmarMonth ||
+      problem =
+          'Myanmar year must be between ${PackageConstants.minMyanmarYear} '
+          'and ${PackageConstants.maxMyanmarYear}';
+    } else if (month < PackageConstants.minMyanmarMonth ||
         month > PackageConstants.maxMyanmarMonth) {
-      throw ArgumentError(
-        'Myanmar month must be between ${PackageConstants.minMyanmarMonth} and ${PackageConstants.maxMyanmarMonth}',
-      );
-    }
-    if (day < PackageConstants.minMyanmarDay ||
+      problem =
+          'Myanmar month must be between ${PackageConstants.minMyanmarMonth} '
+          'and ${PackageConstants.maxMyanmarMonth}';
+    } else if (day < PackageConstants.minMyanmarDay ||
         day > PackageConstants.maxMyanmarDay) {
-      throw ArgumentError(
-        'Myanmar day must be between ${PackageConstants.minMyanmarDay} and ${PackageConstants.maxMyanmarDay}',
+      problem =
+          'Myanmar day must be between ${PackageConstants.minMyanmarDay} '
+          'and ${PackageConstants.maxMyanmarDay}';
+    }
+    if (problem != null) {
+      throw InvalidMyanmarDateException(
+        year: year,
+        month: month,
+        day: day,
+        customMessage: problem,
       );
     }
   }

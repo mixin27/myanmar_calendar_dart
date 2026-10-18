@@ -1,6 +1,7 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/core/myanmar_date_time.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/chronicle_models.dart';
@@ -173,6 +174,32 @@ class MyanmarCalendarClient {
   MyanmarDateTime fromTimestamp(int timestamp) {
     return MyanmarDateTime.fromTimestamp(timestamp, config: config);
   }
+
+  /// Parses a Myanmar date such as `1385/10/1`; throws
+  /// [DateParseException].
+  MyanmarDateTime parseMyanmar(String dateString) {
+    final date = CalendarUtils.parseMyanmarDate(dateString, service: _service);
+    return MyanmarDateTime.fromMyanmarDate(date, config: config);
+  }
+
+  /// Like [parseMyanmar], but returns null instead of throwing.
+  MyanmarDateTime? tryParseMyanmar(String dateString) {
+    final date = CalendarUtils.tryParseMyanmarDate(
+      dateString,
+      service: _service,
+    );
+    return date == null
+        ? null
+        : MyanmarDateTime.fromMyanmarDate(date, config: config);
+  }
+
+  /// Parses an ISO 8601 Western date; throws [DateParseException].
+  MyanmarDateTime parseWestern(String dateString) =>
+      MyanmarDateTime.parseWestern(dateString, config: config);
+
+  /// Like [parseWestern], but returns null instead of throwing.
+  MyanmarDateTime? tryParseWestern(String dateString) =>
+      MyanmarDateTime.tryParseWestern(dateString, config: config);
 
   /// Converts each of [westernDates].
   List<MyanmarDateTime> convertWesternDates(List<DateTime> westernDates) {

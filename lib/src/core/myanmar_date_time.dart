@@ -1,5 +1,6 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
@@ -12,6 +13,7 @@ import 'package:myanmar_calendar_dart/src/services/astro_calculator.dart';
 import 'package:myanmar_calendar_dart/src/services/date_converter.dart';
 import 'package:myanmar_calendar_dart/src/services/format_service.dart';
 import 'package:myanmar_calendar_dart/src/services/holiday_calculator.dart';
+import 'package:myanmar_calendar_dart/src/services/myanmar_calendar_service.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_constants.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_utils.dart';
 
@@ -180,6 +182,41 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
       _getHolidayCalculator(cfg),
       jdn,
     );
+  }
+
+  /// Parses a Myanmar date such as `1385/10/1` or `1.10.1385` (see
+  /// `CalendarUtils.parseMyanmarDate`). Throws [DateParseException].
+  factory MyanmarDateTime.parseMyanmar(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    final date = CalendarUtils.parseMyanmarDate(
+      dateString,
+      service: MyanmarCalendarService.withGlobalCache(
+        config: config ?? CalendarConfig.global,
+      ),
+    );
+    return MyanmarDateTime.fromMyanmarDate(date, config: config);
+  }
+
+  /// Parses an ISO 8601 Western date such as `2024-01-01` (as
+  /// `DateTime.parse` does). Throws [DateParseException].
+  factory MyanmarDateTime.parseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    final DateTime dateTime;
+    try {
+      dateTime = DateTime.parse(dateString);
+    } on FormatException catch (e, stack) {
+      throw DateParseException(
+        dateString: dateString,
+        expectedFormat: 'ISO 8601, such as 2024-01-01',
+        originalError: e,
+        stackTrace: stack,
+      );
+    }
+    return MyanmarDateTime.fromDateTime(dateTime, config: config);
   }
 
   /// Creates Myanmar DateTime from DateTime object.
@@ -820,27 +857,26 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   // STATIC UTILITY METHODS
   // ============================================================================
 
-  /// Parse Myanmar date string
-  static MyanmarDateTime? parseMyanmar(
-    String dateString, {
-    CalendarConfig? config,
-  }) {
-    final parsedDate = CalendarUtils.parseMyanmarDateString(dateString);
-    if (parsedDate != null) {
-      return MyanmarDateTime.fromMyanmarDate(parsedDate, config: config);
-    }
-    return null;
-  }
-
-  /// Parse Western date string
-  static MyanmarDateTime? parseWestern(
+  /// Like [parseMyanmar], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseMyanmar(
     String dateString, {
     CalendarConfig? config,
   }) {
     try {
-      final dateTime = DateTime.parse(dateString);
-      return MyanmarDateTime.fromDateTime(dateTime, config: config);
-    } catch (e) {
+      return MyanmarDateTime.parseMyanmar(dateString, config: config);
+    } on DateParseException {
+      return null;
+    }
+  }
+
+  /// Like [parseWestern], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    try {
+      return MyanmarDateTime.parseWestern(dateString, config: config);
+    } on DateParseException {
       return null;
     }
   }

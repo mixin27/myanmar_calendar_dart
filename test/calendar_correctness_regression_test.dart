@@ -131,7 +131,7 @@ void main() {
       // Wagaung (5) has 29 days; day 30 used to become day 29.
       expect(
         () => MyanmarCalendar.fromMyanmar(1386, 5, 30),
-        throwsArgumentError,
+        throwsA(isA<InvalidMyanmarDateException>()),
       );
     });
 
@@ -139,7 +139,7 @@ void main() {
       expect(_actualYearType(1386), 0);
       expect(
         () => MyanmarCalendar.fromMyanmar(1386, 0, 1),
-        throwsArgumentError,
+        throwsA(isA<InvalidMyanmarDateException>()),
       );
       expect(MyanmarCalendar.getMyanmarMonth(1386, 0), isEmpty);
     });

@@ -71,11 +71,11 @@ void main() {
     test('invalid Western calendar date is rejected', () {
       expect(
         () => MyanmarCalendar.fromWestern(2024, 2, 30),
-        throwsArgumentError,
+        throwsA(isA<InvalidWesternDateException>()),
       );
       expect(
         () => MyanmarCalendar.fromWestern(2025, 11, 31),
-        throwsArgumentError,
+        throwsA(isA<InvalidWesternDateException>()),
       );
     });
 
