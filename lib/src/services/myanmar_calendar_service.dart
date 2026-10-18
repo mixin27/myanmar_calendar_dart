@@ -169,6 +169,12 @@ class MyanmarCalendarService {
     return _dateConverter.julianToMyanmar(julianDayNumber);
   }
 
+  /// The Myanmar date of a local day number, such as
+  /// [MyanmarDate.julianDayNumber], for day arithmetic.
+  MyanmarDate myanmarForLocalDay(double localDay) {
+    return _dateConverter.myanmarForLocalDay(localDay);
+  }
+
   /// Get Julian Day Number for a Myanmar date
   double myanmarToJulian(
     int year,
@@ -315,32 +321,20 @@ class MyanmarCalendarService {
   /// Get Myanmar dates for a month
   List<MyanmarDate> getMyanmarMonth(int year, int month) {
     final dates = <MyanmarDate>[];
+    if (month < 0 || month > 14) return dates;
+    if (month == 0 && !isWatatYear(year)) return dates;
 
-    // get first day of myanmar month
-    final yearInfo = _dateConverter.getMyanmarYearInfo(year);
-    final yearType = yearInfo.yearType;
-
-    // We don't use Late Kason, Just Kason
-    if (month == 14 && yearType == 0) {
-      return dates;
+    // Day 1 of a month isn't always in the same Myanmar year: Tagu (and
+    // Kason, in some years) begins before New Year, so its first days belong
+    // to the previous year. Scan the days around the month's start and keep
+    // the ones that really are [year]/[month]. Months a year doesn't have
+    // (First Waso in a common year, Late Kason in a watat year) come back
+    // empty.
+    final start = _dateConverter.myanmarToJulian(year, month, 1);
+    for (var offset = -2; offset <= 32; offset++) {
+      final date = _dateConverter.julianToMyanmar(start + offset);
+      if (date.year == year && date.month == month) dates.add(date);
     }
-
-    // No Tagu in special year, only Late Tagu
-    if (month == 1 && yearType == 0) {
-      return dates;
-    }
-
-    // Get first day of the month
-    var jdn = _dateConverter.myanmarToJulian(year, month, 1);
-    var currentDate = _dateConverter.julianToMyanmar(jdn);
-
-    // Add all days in the month
-    while (currentDate.year == year && currentDate.month == month) {
-      dates.add(currentDate);
-      jdn += 1;
-      currentDate = _dateConverter.julianToMyanmar(jdn);
-    }
-
     return dates;
   }
 
@@ -353,18 +347,12 @@ class MyanmarCalendarService {
   }
 
   /// Check if a Myanmar year is a watat year
-  bool isWatatYear(int year) {
-    final firstDayOfYear = _dateConverter.myanmarToJulian(year, 1, 1);
-    final myanmarDate = _dateConverter.julianToMyanmar(firstDayOfYear);
-    return myanmarDate.yearType > 0;
-  }
+  bool isWatatYear(int year) => _dateConverter.isWatatYear(year);
 
   /// Get year type for a Myanmar year
-  int getYearType(int year) {
-    final firstDayOfYear = _dateConverter.myanmarToJulian(year, 1, 1);
-    final myanmarDate = _dateConverter.julianToMyanmar(firstDayOfYear);
-    return myanmarDate.yearType;
-  }
+  ///
+  /// 0 common, 1 little watat, 2 big watat.
+  int getYearType(int year) => _dateConverter.calculateYearType(year);
 
   /// Get cache statistics
   Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();
@@ -440,6 +428,15 @@ class MyanmarCalendarService {
       }
 
       return const ValidationResult(isValid: true);
+      // The package reports invalid input with ArgumentError; here it is
+      // the answer, not a failure.
+      // ignore: avoid_catching_errors
+    } on ArgumentError catch (e) {
+      // myanmarToJulian rejects days the month doesn't have.
+      return ValidationResult(
+        isValid: false,
+        error: 'Invalid date: ${e.message}',
+      );
     } on Exception catch (e) {
       return ValidationResult(isValid: false, error: 'Invalid date: $e');
     }

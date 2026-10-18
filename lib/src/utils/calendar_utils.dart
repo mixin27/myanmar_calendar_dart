@@ -50,7 +50,7 @@ class CalendarUtils {
     final endJdn = endDate.julianDayNumber;
 
     while (currentJdn <= endJdn) {
-      dates.add(service.julianToMyanmar(currentJdn));
+      dates.add(service.myanmarForLocalDay(currentJdn));
       currentJdn += 1.0;
     }
 
@@ -130,7 +130,7 @@ class CalendarUtils {
   static MyanmarDate addDaysToMyanmarDate(MyanmarDate date, int days) {
     final service = MyanmarCalendarService();
     final newJdn = date.julianDayNumber + days;
-    return service.julianToMyanmar(newJdn);
+    return service.myanmarForLocalDay(newJdn);
   }
 
   /// Adds months to a Myanmar date using deterministic month boundaries.
@@ -141,7 +141,7 @@ class CalendarUtils {
   static MyanmarDate addMonthsToMyanmarDate(MyanmarDate date, int months) {
     final service = MyanmarCalendarService();
     if (months == 0) {
-      return service.julianToMyanmar(date.julianDayNumber);
+      return service.myanmarForLocalDay(date.julianDayNumber);
     }
 
     final originalDay = date.day;
@@ -165,21 +165,27 @@ class CalendarUtils {
       }
     }
 
-    final targetMonthLength = _monthLengthByTransition(
+    // Pick the same day number in the target month, or its last day. A
+    // month split by New Year doesn't start at day 1, so counting from the
+    // month's first day would shift the day.
+    final nextMonthStartJdn = _findNextMonthStartJdn(
       service,
       targetMonthStartJdn,
     );
-    final targetDay = math.min(originalDay, targetMonthLength);
-    final targetJdn = targetMonthStartJdn + (targetDay - 1);
-    return service.julianToMyanmar(targetJdn);
+    var result = service.myanmarForLocalDay(targetMonthStartJdn);
+    for (var jdn = targetMonthStartJdn; jdn < nextMonthStartJdn; jdn++) {
+      result = service.myanmarForLocalDay(jdn);
+      if (result.day >= originalDay) break;
+    }
+    return result;
   }
 
   static double _findMonthStartJdn(MyanmarCalendarService service, double jdn) {
-    final current = service.julianToMyanmar(jdn);
+    final current = service.myanmarForLocalDay(jdn);
     var cursor = current.julianDayNumber;
 
     while (true) {
-      final previousDay = service.julianToMyanmar(cursor - 1);
+      final previousDay = service.myanmarForLocalDay(cursor - 1);
       if (previousDay.year != current.year ||
           previousDay.month != current.month) {
         return cursor;
@@ -192,11 +198,11 @@ class CalendarUtils {
     MyanmarCalendarService service,
     double monthStartJdn,
   ) {
-    final monthStart = service.julianToMyanmar(monthStartJdn);
+    final monthStart = service.myanmarForLocalDay(monthStartJdn);
     var cursor = monthStartJdn + 1;
 
     while (true) {
-      final candidate = service.julianToMyanmar(cursor);
+      final candidate = service.myanmarForLocalDay(cursor);
       if (candidate.year != monthStart.year ||
           candidate.month != monthStart.month) {
         return candidate.julianDayNumber;
@@ -209,18 +215,10 @@ class CalendarUtils {
     MyanmarCalendarService service,
     double currentMonthStartJdn,
   ) {
-    final previousMonthAnyDay = service.julianToMyanmar(
+    final previousMonthAnyDay = service.myanmarForLocalDay(
       currentMonthStartJdn - 1,
     );
     return _findMonthStartJdn(service, previousMonthAnyDay.julianDayNumber);
-  }
-
-  static int _monthLengthByTransition(
-    MyanmarCalendarService service,
-    double monthStartJdn,
-  ) {
-    final nextMonthStartJdn = _findNextMonthStartJdn(service, monthStartJdn);
-    return (nextMonthStartJdn - monthStartJdn).round();
   }
 
   /// Gets the number of days in a Myanmar month
@@ -284,7 +282,7 @@ class CalendarUtils {
     const maxDays = 45; // More than a lunar month
 
     for (var i = 0; i < maxDays; i++) {
-      final currentDate = service.julianToMyanmar(currentJdn);
+      final currentDate = service.myanmarForLocalDay(currentJdn);
       if (currentDate.moonPhase == moonPhase) {
         return currentDate;
       }
@@ -309,7 +307,7 @@ class CalendarUtils {
     const maxDays = 45; // More than a lunar month
 
     for (var i = 0; i < maxDays; i++) {
-      final currentDate = service.julianToMyanmar(currentJdn);
+      final currentDate = service.myanmarForLocalDay(currentJdn);
       if (currentDate.moonPhase == moonPhase) {
         return currentDate;
       }
@@ -329,8 +327,11 @@ class CalendarUtils {
     final dates = <MyanmarDate>[];
 
     // Start from the beginning of the year
+    // From 1 Tagu (just before New Year) past the next 1 Tagu, so the
+    // year's Late Tagu and Late Kason are included; the year filter keeps
+    // only days of [year].
     final startJdn = service.myanmarToJulian(year, 1, 1);
-    final endJdn = service.myanmarToJulian(year + 1, 1, 1);
+    final endJdn = service.myanmarToJulian(year + 1, 1, 1) + 60;
 
     var currentJdn = startJdn;
     while (currentJdn < endJdn) {
@@ -591,12 +592,12 @@ class CalendarUtils {
     return {
       'count': dates.length,
       'span_days': span,
-      'earliest': service.julianToMyanmar(min),
-      'latest': service.julianToMyanmar(max),
+      'earliest': service.myanmarForLocalDay(min),
+      'latest': service.myanmarForLocalDay(max),
       'average_jdn': average,
       'median_jdn': median,
-      'average_date': service.julianToMyanmar(average),
-      'median_date': service.julianToMyanmar(median),
+      'average_date': service.myanmarForLocalDay(average),
+      'median_date': service.myanmarForLocalDay(median),
     };
   }
 

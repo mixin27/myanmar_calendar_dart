@@ -332,6 +332,20 @@ class DateConverter {
     var monthLength = 30 - normalizedMonth % 2;
     if (normalizedMonth == 3) monthLength += b; // Nayon in big watat
 
+    // Dates the calendar doesn't have used to slide onto a neighbour (day 30
+    // of a 29-day month became day 29; First Waso in a common year became
+    // Waso), so a typo produced a real but different day.
+    if (day > monthLength) {
+      throw ArgumentError(
+        'Myanmar month $month of $year has $monthLength days, not $day',
+      );
+    }
+    if (month == 0 && yearInfo['myt'] == 0) {
+      throw ArgumentError(
+        'First Waso (month 0) only exists in watat years; $year is common',
+      );
+    }
+
     // Calculate moon phase for validation
     final moonPhase =
         ((day + 1) / 16).floor() +
@@ -398,6 +412,12 @@ class DateConverter {
     return myanmarDate;
   }
 
+  /// The Myanmar date of the local day number [localDay], such as a
+  /// [MyanmarDate.julianDayNumber] (local noon), without applying the
+  /// time-zone offset again.
+  MyanmarDate myanmarForLocalDay(double localDay) =>
+      julianToMyanmar(localDay.roundToDouble() - _config.timezoneOffsetInDays);
+
   MyanmarDate _calculateJulianToMyanmar(double julianDayNumber) {
     final jdn = julianDayNumber.round();
 
@@ -455,7 +475,8 @@ class DateConverter {
       moonPhase: moonPhase,
       fortnightDay: fortnightDay,
       weekday: weekDay,
-      julianDayNumber: julianDayNumber,
+      // The day itself (local noon), not the time it was asked for.
+      julianDayNumber: jdn.toDouble(),
       sasanaYear: sasanaYear,
       monthLength: monthLength,
       monthType: monthType,

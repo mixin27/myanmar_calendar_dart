@@ -1,0 +1,14 @@
+# With a .pubignore, pub no longer reads .gitignore here, so its rules are
+# repeated first.
+.dart_tool/
+.packages
+build/
+pubspec.lock
+coverage/
+internal/
+
+# Development-only files that don't belong in the published package.
+.github/
+reference/
+tool/
+test/fixtures/

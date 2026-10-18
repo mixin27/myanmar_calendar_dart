@@ -89,8 +89,10 @@ class MyanmarDate {
   }
 
   @override
-  bool operator ==(covariant MyanmarDate other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    // Comparing with another type is false, not a TypeError.
+    if (other is! MyanmarDate) return false;
 
     return other.year == year &&
         other.month == month &&

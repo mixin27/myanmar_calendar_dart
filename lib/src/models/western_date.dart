@@ -91,4 +91,22 @@ class WesternDate {
   String toString() {
     return 'WesternDate($year-$month-$day $hour:$minute:$second)';
   }
+
+  /// Equal when the date and time fields match. (Without this, equal
+  /// [CompleteDate]s were never `==`.)
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WesternDate &&
+          other.year == year &&
+          other.month == month &&
+          other.day == day &&
+          other.hour == hour &&
+          other.minute == minute &&
+          other.second == second &&
+          other.millisecond == millisecond;
+
+  @override
+  int get hashCode =>
+      Object.hash(year, month, day, hour, minute, second, millisecond);
 }

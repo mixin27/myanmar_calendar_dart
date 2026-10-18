@@ -268,14 +268,6 @@ class HolidayCalculator {
           _t('End of Buddhist Lent', language),
         );
       }
-      if (!_isDisabled(
-        HolidayId.holiday,
-        westernYear,
-        westernMonth,
-        westernDay,
-      )) {
-        publicHolidays.add(_t('Holiday', language));
-      }
     }
 
     if (date.year >= 1379 &&
@@ -311,7 +303,7 @@ class HolidayCalculator {
           westernMonth,
           westernDay,
         )) {
-      culturalHolidays.add(_t('Holiday', language));
+      publicHolidays.add(_t('Holiday', language));
     }
 
     // National Day - Tazaungmon waning 10
@@ -392,8 +384,8 @@ class HolidayCalculator {
       items.add(_t('Garudhamma', language));
     }
 
-    // Mothers' Day - Pyatho full moon (since 1998 CE / 1360 ME)
-    if (date.year >= 1360 &&
+    // Mothers' Day - Pyatho full moon (since 1994 CE / 1356 ME)
+    if (date.year >= 1356 &&
         date.month == CalendarConstants.monthPyatho &&
         date.moonPhase == CalendarConstants.moonPhaseFullMoon &&
         !_isDisabled(
@@ -508,6 +500,14 @@ class HolidayCalculator {
     final month = westernDate['month']!;
     final day = westernDate['day']!;
 
+    // New Year's Day was an anniversary, not a holiday, until 2017
+    if (year <= 2017 &&
+        month == 1 &&
+        day == 1 &&
+        !_isDisabled(HolidayId.newYearDay, year, month, day)) {
+      items.add(_t("New Year's", language));
+    }
+
     // General Aung San's Birthday (February 13, since 1915)
     if (year >= 1915 &&
         month == 2 &&
@@ -596,18 +596,25 @@ class HolidayCalculator {
     final month = westernDate['month']!;
     final day = westernDate['day']!;
 
-    // New Year's Day (since 2018)
+    // New Year's Day was a public holiday from 2018 to 2021
     if (year >= 2018 &&
+        year <= 2021 &&
         month == 1 &&
         day == 1 &&
         !_isDisabled(HolidayId.newYearDay, year, month, day)) {
       publicHolidays.add(_t("New Year's", language));
     }
 
-    // Pre New Year's
-    if (year >= 2018 &&
+    // Holidays before New Year: 30-31 December 2017, 31 December to 2021
+    if (((year >= 2017 && year <= 2021 && day == 31) ||
+            (year == 2017 && day == 30)) &&
         month == 12 &&
-        day == 31 &&
+        !_isDisabled(HolidayId.holiday, year, month, day)) {
+      publicHolidays.add(_t('Holiday', language));
+    }
+
+    // Substitute holidays, 2019 to 2021
+    if (isSubstituteHoliday(_westernToJdn(year, month, day).toDouble(), year) &&
         !_isDisabled(HolidayId.holiday, year, month, day)) {
       publicHolidays.add(_t('Holiday', language));
     }
@@ -672,6 +679,7 @@ class HolidayCalculator {
     final easterJdn = _calculateEaster(year);
     final currentJdn = _westernToJdn(year, month, day);
 
+    if (year < 1876) return;
     if (currentJdn == easterJdn &&
         !_isDisabled(HolidayId.easterSunday, year, month, day)) {
       religiousHolidays.add(_t('Easter', language));

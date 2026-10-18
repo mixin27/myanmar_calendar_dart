@@ -44,8 +44,9 @@ class ShanDate {
 
   /// Create Shan date from Myanmar date
   ///
-  /// Converts a Myanmar calendar date to Shan calendar by adding
-  /// the offset of 733 years to the Myanmar year.
+  /// Converts a Myanmar calendar date to Shan calendar. The Shan year
+  /// begins at Shan New Year (Nadaw 1): it is the Myanmar year + 733 from
+  /// Nadaw onwards and + 732 before.
   ///
   /// Example:
   /// ```dart
@@ -55,7 +56,10 @@ class ShanDate {
   /// ```
   factory ShanDate.fromMyanmarDate(MyanmarDate myanmarDate) {
     return ShanDate(
-      year: ShanCalendarConstants.getShanYear(myanmarDate.year),
+      year: ShanCalendarConstants.getShanYearForDate(
+        myanmarDate.year,
+        myanmarDate.month,
+      ),
       month: myanmarDate.month,
       day: myanmarDate.day,
       myanmarYear: myanmarDate.year,

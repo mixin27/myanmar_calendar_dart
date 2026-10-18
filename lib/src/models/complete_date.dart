@@ -305,8 +305,10 @@ class CompleteDate {
   /// Two complete dates are considered equal if all their component dates
   /// and information objects are equal.
   @override
-  bool operator ==(covariant CompleteDate other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    // Comparing with another type is false, not a TypeError.
+    if (other is! CompleteDate) return false;
 
     return other.western == western &&
         other.myanmar == myanmar &&

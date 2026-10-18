@@ -22,15 +22,15 @@ import 'package:myanmar_calendar_dart/src/utils/calendar_utils.dart';
 /// - Factory constructors for different use cases
 /// - Integration with Dart's DateTime class
 /// - Astrological and holiday information access
-class MyanmarDateTime {
+class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Create from Map (deserialization)
   factory MyanmarDateTime.fromMap(
     Map<String, dynamic> map, {
     CalendarConfig? config,
   }) {
     final completeDate = CompleteDate.fromMap(map);
-    return MyanmarDateTime.fromJulianDay(
-      completeDate.julianDayNumber,
+    return MyanmarDateTime.fromMyanmarDate(
+      completeDate.myanmar,
       config: config,
     );
   }
@@ -115,11 +115,12 @@ class MyanmarDateTime {
     final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
+    // MyanmarDate holds the local day number (local noon).
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
       _getHolidayCalculator(cfg),
-      myanmarDate.julianDayNumber,
+      myanmarDate.julianDayNumber.roundToDouble() - cfg.timezoneOffsetInDays,
     );
   }
 
@@ -597,6 +598,7 @@ class MyanmarDateTime {
 
   /// Compare this with another Myanmar DateTime
   /// Returns -1 if before, 0 if same, 1 if after
+  @override
   int compareTo(MyanmarDateTime other) {
     return _julianDayNumber.compareTo(other._julianDayNumber);
   }
@@ -701,7 +703,11 @@ class MyanmarDateTime {
 
   /// Get the end of the month (last day, 23:59:59.999)
   MyanmarDateTime get endOfMonth {
-    final daysInMonth = monthLength;
+    // The Western month, like startOfMonth. (It used the Myanmar month's
+    // length as a Western day, so a 30-day Myanmar month threw in
+    // February.)
+    final western = westernDate;
+    final daysInMonth = DateTime.utc(western.year, western.month + 1, 0).day;
     return copyWith(
       day: daysInMonth,
       hour: 23,

@@ -359,8 +359,10 @@ class ValidationResult {
   }
 
   @override
-  bool operator ==(covariant ValidationResult other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    // Comparing with another type is false, not a TypeError.
+    if (other is! ValidationResult) return false;
 
     return other.isValid == isValid &&
         other.error == error &&
@@ -374,14 +376,19 @@ class ValidationResult {
 
   @override
   int get hashCode {
-    return isValid.hashCode ^
-        error.hashCode ^
-        warnings.hashCode ^
-        context.hashCode ^
-        errorCode.hashCode ^
-        severity.hashCode ^
-        field.hashCode ^
-        suggestions.hashCode;
+    // By content, like ==, so equal results hash alike.
+    return Object.hash(
+      isValid,
+      error,
+      Object.hashAll(warnings),
+      Object.hashAllUnordered(
+        (context ?? const {}).entries.map((e) => Object.hash(e.key, e.value)),
+      ),
+      errorCode,
+      severity,
+      field,
+      Object.hashAll(suggestions),
+    );
   }
 
   @override

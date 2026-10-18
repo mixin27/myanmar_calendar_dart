@@ -1,4 +1,5 @@
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
+import 'package:myanmar_calendar_dart/src/localization/translation_data.dart';
 import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:test/test.dart';
 
@@ -7,8 +8,10 @@ void main() {
     test(
       'every translation key includes values for all supported languages',
       () {
-        for (final key in TranslationService.allKeys) {
-          final translations = TranslationService.getTranslations(key);
+        // The raw table: TranslationService fills gaps with English, so
+        // checking its output could never fail.
+        for (final key in kTranslationData.keys) {
+          final translations = kTranslationData[key];
           expect(
             translations,
             isNotNull,
@@ -23,6 +26,7 @@ void main() {
             );
 
             final value = translations[language];
+            if (_knownGaps.contains('${language.code}:$key')) continue;
             expect(
               value,
               isNotNull,
@@ -45,3 +49,9 @@ void main() {
     });
   });
 }
+
+/// Values still to be supplied; they fall back to English for now. Remove an
+/// entry once its translation is added.
+const _knownGaps = {
+  'karen:Ku', // the year suffix (ခု)
+};
