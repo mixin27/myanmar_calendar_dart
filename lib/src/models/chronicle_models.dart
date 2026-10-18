@@ -16,6 +16,9 @@ class ChronicleEntryData {
   final String id;
 
   /// Start Julian day number.
+  ///
+  /// Any time on the day works; the built-in entries use the whole
+  /// (noon-based) day number, like `MyanmarDate.julianDayNumber`.
   final double startJdn;
 
   /// End Julian day number, inclusive. Null for a one-day event.

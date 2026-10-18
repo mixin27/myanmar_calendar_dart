@@ -54,4 +54,59 @@ void main() {
       );
     });
   });
+
+  group('day matching', () {
+    final entries = MyanmarCalendar.getChroniclesBetweenJdn(0, 3000000);
+
+    test('an entry is found on its own day and not the days around it', () {
+      for (final entry in entries) {
+        final day = entry.startDay.toDouble();
+        expect(MyanmarCalendar.getChronicleForJdn(day), contains(entry));
+        expect(
+          MyanmarCalendar.getChronicleForJdn(day - 1),
+          isNot(contains(entry)),
+        );
+        expect(
+          MyanmarCalendar.getChronicleForJdn(day + 1),
+          isNot(contains(entry)),
+        );
+      }
+    });
+
+    test('Myanmar dates and DateTimes find the entry of their day', () {
+      for (final entry in entries) {
+        final dt = MyanmarCalendar.fromJulianDay(entry.startDay.toDouble());
+        expect(
+          MyanmarCalendar.getChronicleForMyanmar(dt.myanmarDate),
+          contains(entry),
+        );
+        // DateTime is proleptic Gregorian; day 2400001 is 1858-11-17.
+        final w = DateTime.utc(
+          1858,
+          11,
+          17,
+        ).add(Duration(days: entry.startDay - 2400001));
+        for (final hour in [0, 12, 23]) {
+          final local = DateTime(w.year, w.month, w.day, hour);
+          expect(MyanmarCalendar.getChronicleFor(local), contains(entry));
+          expect(
+            MyanmarCalendar.getChronicleFor(
+              local.subtract(const Duration(days: 1)),
+            ),
+            isNot(contains(entry)),
+          );
+        }
+      }
+    });
+
+    test('an inscription dated ME 420 Tabaung waxing 5 lands on that day', () {
+      final date = MyanmarCalendar.fromMyanmar(420, 12, 5);
+      expect(
+        MyanmarCalendar.getChronicleForMyanmar(
+          date.myanmarDate,
+        ).map((e) => e.id),
+        contains('jdn_2107906'),
+      );
+    });
+  });
 }
