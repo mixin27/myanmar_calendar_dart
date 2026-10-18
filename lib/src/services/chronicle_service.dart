@@ -59,13 +59,26 @@ class ChronicleService {
     return result;
   }
 
-  /// Get dynasty by Julian day number.
+  /// The earliest-starting dynasty covering the day of [jdn].
+  ///
+  /// Dynasties overlap (Hanthawaddy with Pagan and Ava, Mrauk-U with
+  /// Taungoo, Konbaung with the British colonial period); use
+  /// [dynastiesForJdn] for all of them.
   DynastyData? dynastyForJdn(double jdn) {
     _ensureLoaded();
-    for (final d in _dynasties!) {
-      if (jdn >= d.startJdn && jdn <= d.endJdn) return d;
+    for (final d in _sortedDynasties!) {
+      if (d.includesJdn(jdn)) return d;
     }
     return null;
+  }
+
+  /// Every dynasty covering the day of [jdn], ordered by start date.
+  List<DynastyData> dynastiesForJdn(double jdn) {
+    _ensureLoaded();
+    return [
+      for (final d in _sortedDynasties!)
+        if (d.includesJdn(jdn)) d,
+    ];
   }
 
   /// Get entries for a given dynasty ID (ordered by start date).

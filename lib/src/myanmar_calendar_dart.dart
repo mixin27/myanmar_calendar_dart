@@ -834,9 +834,16 @@ class MyanmarCalendar {
     return _client.getChronicleFor(dt);
   }
 
-  /// Get dynasty data for [DateTime]
+  /// Get the earliest-starting dynasty for [DateTime]
+  ///
+  /// Dynasties overlap; [getDynastiesFor] returns all of them.
   static DynastyData? getDynastyFor(DateTime dt) {
     return _client.getDynastyFor(dt);
+  }
+
+  /// Get every dynasty for [DateTime], ordered by start date
+  static List<DynastyData> getDynastiesFor(DateTime dt) {
+    return _client.getDynastiesFor(dt);
   }
 
   /// Get chronicles for a Julian Day Number
@@ -844,9 +851,14 @@ class MyanmarCalendar {
     return _client.getChronicleForJdn(jdn);
   }
 
-  /// Get dynasty for a Julian Day Number
+  /// Get the earliest-starting dynasty for a Julian Day Number
   static DynastyData? getDynastyForJdn(double jdn) {
     return _client.getDynastyForJdn(jdn);
+  }
+
+  /// Get every dynasty for a Julian Day Number, ordered by start date
+  static List<DynastyData> getDynastiesForJdn(double jdn) {
+    return _client.getDynastiesForJdn(jdn);
   }
 
   /// Get chronicles for a MyanmarDate (uses its JDN)
@@ -854,9 +866,14 @@ class MyanmarCalendar {
     return _client.getChronicleForMyanmar(date);
   }
 
-  /// Get dynasty for a MyanmarDate (uses its JDN)
+  /// Get the earliest-starting dynasty for a MyanmarDate (uses its JDN)
   static DynastyData? getDynastyForMyanmar(MyanmarDate date) {
     return _client.getDynastyForMyanmar(date);
+  }
+
+  /// Get every dynasty for a MyanmarDate, ordered by start date
+  static List<DynastyData> getDynastiesForMyanmar(MyanmarDate date) {
+    return _client.getDynastiesForMyanmar(date);
   }
 
   /// Get entries for a given dynasty ID

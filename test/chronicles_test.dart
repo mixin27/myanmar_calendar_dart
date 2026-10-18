@@ -109,4 +109,48 @@ void main() {
       );
     });
   });
+
+  group('overlapping dynasties', () {
+    List<String> idsOn(DateTime dt) =>
+        MyanmarCalendar.getDynastiesFor(dt).map((d) => d.id).toList();
+
+    test('all overlapping dynasties are returned, earliest first', () {
+      expect(idsOn(DateTime(1700)), ['mrauk_u', 'taungoo']);
+      expect(idsOn(DateTime(1870)), ['konbaung', 'british_colonial_period']);
+      expect(
+        MyanmarCalendar.getDynastiesForJdn(2193000).map((d) => d.id),
+        ['pagan', 'hanthawaddy'],
+      );
+      expect(
+        MyanmarCalendar.getDynastiesForJdn(2250000).map((d) => d.id),
+        ['hanthawaddy', 'ava', 'mrauk_u'],
+      );
+    });
+
+    test('the single form is the earliest-starting of them', () {
+      for (var jdn = 1944957.0; jdn <= 2459303; jdn += 997) {
+        final all = MyanmarCalendar.getDynastiesForJdn(jdn);
+        expect(MyanmarCalendar.getDynastyForJdn(jdn), all.firstOrNull);
+        for (final d in all) {
+          expect(d.includesJdn(jdn), isTrue);
+        }
+      }
+      expect(MyanmarCalendar.getDynastyFor(DateTime(1870))?.id, 'konbaung');
+    });
+
+    test('Myanmar dates and DateTimes agree with day numbers', () {
+      final date = MyanmarCalendar.fromWestern(1870, 6, 1);
+      expect(
+        MyanmarCalendar.getDynastiesForMyanmar(date.myanmarDate),
+        MyanmarCalendar.getDynastiesFor(DateTime(1870, 6, 1)),
+      );
+      final first = MyanmarCalendar.getDynastyById('early_pagan')!;
+      expect(
+        MyanmarCalendar.getDynastiesForJdn(first.startJdn - 0.5),
+        contains(first),
+      );
+      expect(MyanmarCalendar.getDynastiesForJdn(first.startJdn - 1), isEmpty);
+      expect(MyanmarCalendar.getDynastiesFor(DateTime(2030)), isEmpty);
+    });
+  });
 }

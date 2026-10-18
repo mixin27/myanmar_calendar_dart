@@ -88,6 +88,12 @@ class DynastyData {
 
   /// End Julian day number.
   final double endJdn;
+
+  /// Whether the dynasty covers the day of [jdn], ends included.
+  bool includesJdn(double jdn) {
+    final day = _dayOf(jdn);
+    return day >= _dayOf(startJdn) && day <= _dayOf(endJdn);
+  }
 }
 
 /// Ruler data.

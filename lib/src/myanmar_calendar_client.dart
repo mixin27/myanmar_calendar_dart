@@ -400,26 +400,42 @@ class MyanmarCalendarClient {
     return _chronicles.byJdn(jdn);
   }
 
-  /// Returns dynasty for [dt], if any.
+  /// The earliest-starting dynasty on the day of [dt], if any.
+  ///
+  /// Dynasties overlap; [getDynastiesFor] returns all of them.
   DynastyData? getDynastyFor(DateTime dt) {
     final jdn = WesternDate.fromDateTime(dt).julianDayNumber;
     return _chronicles.dynastyForJdn(jdn);
+  }
+
+  /// Every dynasty on the day of [dt], ordered by start date.
+  List<DynastyData> getDynastiesFor(DateTime dt) {
+    final jdn = WesternDate.fromDateTime(dt).julianDayNumber;
+    return _chronicles.dynastiesForJdn(jdn);
   }
 
   /// Chronicle entries for a Julian Day Number.
   List<ChronicleEntryData> getChronicleForJdn(double jdn) =>
       _chronicles.byJdn(jdn);
 
-  /// The dynasty for a Julian Day Number, if any.
+  /// The earliest-starting dynasty for a Julian Day Number, if any.
   DynastyData? getDynastyForJdn(double jdn) => _chronicles.dynastyForJdn(jdn);
+
+  /// Every dynasty for a Julian Day Number, ordered by start date.
+  List<DynastyData> getDynastiesForJdn(double jdn) =>
+      _chronicles.dynastiesForJdn(jdn);
 
   /// Chronicle entries for a Myanmar date.
   List<ChronicleEntryData> getChronicleForMyanmar(MyanmarDate date) =>
       _chronicles.byJdn(date.julianDayNumber);
 
-  /// The dynasty for a Myanmar date, if any.
+  /// The earliest-starting dynasty for a Myanmar date, if any.
   DynastyData? getDynastyForMyanmar(MyanmarDate date) =>
       _chronicles.dynastyForJdn(date.julianDayNumber);
+
+  /// Every dynasty for a Myanmar date, ordered by start date.
+  List<DynastyData> getDynastiesForMyanmar(MyanmarDate date) =>
+      _chronicles.dynastiesForJdn(date.julianDayNumber);
 
   /// Chronicle entries of a dynasty.
   List<ChronicleEntryData> getEntriesForDynasty(String dynastyId) =>
