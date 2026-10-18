@@ -1,4 +1,4 @@
-## Unreleased
+## 2.0.2
 
 - Fix `getCompleteDate` and `westernToMyanmar` returning the next Myanmar day
   for times from 17:30 onwards (the offset was applied twice)
