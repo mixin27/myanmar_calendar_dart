@@ -60,6 +60,61 @@ class DateConverter {
   // WESTERN DATE CONVERSIONS
   // ============================================================================
 
+  /// [dateTime] as wall-clock time in this calendar's time zone.
+  ///
+  /// A local [DateTime]'s fields already are that wall-clock time. A UTC
+  /// [DateTime] is an instant, so it is moved by the configured offset.
+  DateTime wallClockOf(DateTime dateTime) {
+    if (!dateTime.isUtc) return dateTime;
+    return dateTime.add(_offsetDuration);
+  }
+
+  /// The UTC Julian Day Number of [dateTime], read as in [wallClockOf].
+  double dateTimeToJulian(DateTime dateTime) {
+    final wall = wallClockOf(dateTime);
+    return westernToJulian(
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
+    );
+  }
+
+  /// The UTC Julian Day Number of local noon on the calendar day that
+  /// [dateTime] falls on (read as in [wallClockOf]). Myanmar days match
+  /// civil days, so the time of day never changes the Myanmar date.
+  double dayJulian(DateTime dateTime) {
+    final wall = wallClockOf(dateTime);
+    return westernToJulian(wall.year, wall.month, wall.day, 12, 0, 0);
+  }
+
+  /// The UTC Julian Day Number of local noon on [year]-[month]-[day].
+  double civilDayJulian(int year, int month, int day) =>
+      westernToJulian(year, month, day, 12, 0, 0);
+
+  /// The instant [julianDayNumber] (UTC) as a UTC [DateTime].
+  DateTime julianToUtcDateTime(double julianDayNumber) {
+    final wall = julianToWestern(julianDayNumber);
+    return DateTime.utc(
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
+    ).subtract(_offsetDuration);
+  }
+
+  /// About 9 ms, far below a day yet above double rounding error.
+  static const _boundaryEpsilon = 1e-7;
+
+  Duration get _offsetDuration => Duration(
+    microseconds: (_config.timezoneOffset * Duration.microsecondsPerHour)
+        .round(),
+  );
+
   /// Convert Western date to Julian Day Number
   double westernToJulian(
     int year,
@@ -178,8 +233,14 @@ class DateConverter {
     final calType = _config.calendarType;
     final gregorianStart = _config.gregorianStart.toDouble();
 
+    // Snap to the nearest whole second before splitting date and time, so a
+    // value a hair under 02:30:00 doesn't come out as 02:29:60, nor a hair
+    // under midnight as the previous day.
+    final totalSeconds = ((localJdn + 0.5) * 86400).round();
+    final dayNumber = totalSeconds ~/ 86400;
+    final secondOfDay = totalSeconds - dayNumber * 86400;
+
     double j;
-    double jf;
     double y;
     double m;
     double d;
@@ -188,7 +249,7 @@ class DateConverter {
         (calType == CalendarConstants.calendarTypeBritish &&
             localJdn < gregorianStart)) {
       // Julian Calendar
-      final b = (localJdn + 0.5).floor() + 1524;
+      final b = dayNumber + 1524;
       final c = ((b - 122.1) / 365.25).floor();
       final f = (365.25 * c).floor();
       final e = ((b - f) / 30.6001).floor();
@@ -196,13 +257,9 @@ class DateConverter {
       m = e > 13 ? e - 13 : e - 1;
       d = b - f - (30.6001 * e).floorToDouble();
       y = m < 3 ? c - 4715 : c - 4716;
-
-      j = localJdn + 0.5;
-      jf = j - j.floor();
     } else {
       // Gregorian Calendar
-      j = (localJdn + 0.5).floorToDouble();
-      jf = localJdn + 0.5 - j;
+      j = dayNumber.toDouble();
 
       j -= 1721119;
       y = ((4 * j - 1) / 146097).floorToDouble();
@@ -227,13 +284,11 @@ class DateConverter {
     }
 
     // Extract time components
-    jf *= 24;
-    final h = jf.floor();
-    jf = (jf - h) * 60;
-    final n = jf.floor();
-    final s = ((jf - n) * 60).round();
+    final h = secondOfDay ~/ 3600;
+    final n = (secondOfDay % 3600) ~/ 60;
+    final s = secondOfDay % 60;
 
-    final weekday = ((localJdn + 0.5).floor() + 2) % 7;
+    final weekday = (dayNumber + 2) % 7;
 
     return WesternDate(
       year: y.toInt(),
@@ -327,8 +382,10 @@ class DateConverter {
 
     // Calculate if not in cache
     // Add timezone offset to convert UTC JDN to Local Time JDN for calculation
+    // A hair past the offset keeps exact local midnight on its own day
+    // when subtracting and adding the offset leaves a rounding error.
     final myanmarDate = _calculateJulianToMyanmar(
-      julianDayNumber + _config.timezoneOffsetInDays,
+      julianDayNumber + _config.timezoneOffsetInDays + _boundaryEpsilon,
     );
 
     // Store in cache

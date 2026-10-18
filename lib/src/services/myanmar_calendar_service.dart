@@ -106,9 +106,11 @@ class MyanmarCalendarService {
   FormatService get formatService => _formatService;
 
   /// Convert Western date to Myanmar date
+  ///
+  /// A local [dateTime] is read as wall-clock time in the configured time
+  /// zone; a UTC one is an instant. The time of day never changes the result.
   MyanmarDate westernToMyanmar(DateTime dateTime) {
-    final westernDate = WesternDate.fromDateTime(dateTime);
-    return _dateConverter.julianToMyanmar(westernDate.julianDayNumber);
+    return _dateConverter.julianToMyanmar(_dateConverter.dayJulian(dateTime));
   }
 
   /// Convert julian day number to Western date.
@@ -230,6 +232,10 @@ class MyanmarCalendarService {
   }
 
   /// Get complete information for a date (Myanmar + Western + Astro + Holidays)
+  ///
+  /// A local [dateTime] is read as wall-clock time in the configured time
+  /// zone; a UTC one is an instant. The Myanmar date depends only on the
+  /// calendar day, never on the time of day.
   CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
     final resolvedLanguage = language ?? _defaultLanguage;
     final completeDateNamespace =
@@ -246,9 +252,11 @@ class MyanmarCalendarService {
     }
 
     // Calculate if not in cache
-    final westernDate = WesternDate.fromDateTime(dateTime);
+    final westernDate = WesternDate.fromDateTime(
+      _dateConverter.wallClockOf(dateTime),
+    );
     final myanmarDate = _dateConverter.julianToMyanmar(
-      westernDate.julianDayNumber,
+      _dateConverter.dayJulian(dateTime),
     );
     final shanDate = ShanDate.fromMyanmarDate(myanmarDate);
     final astroInfo = _astroCalculator.calculate(myanmarDate);
@@ -276,6 +284,15 @@ class MyanmarCalendarService {
 
     return completeDate;
   }
+
+  /// Complete information for the calendar day [year]-[month]-[day], with
+  /// no time or time zone involved.
+  CompleteDate getCompleteDateFor(
+    int year,
+    int month,
+    int day, {
+    Language? language,
+  }) => getCompleteDate(DateTime(year, month, day), language: language);
 
   /// Find auspicious days for a given Myanmar month and year
   List<CompleteDate> findAuspiciousDays(

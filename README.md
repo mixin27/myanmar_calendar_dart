@@ -87,7 +87,28 @@ final fromMyanmar = MyanmarCalendar.fromMyanmar(1385, 1, 1);
 final complete = MyanmarCalendar.getCompleteDate(DateTime.now());
 final astro = MyanmarCalendar.getAstroInfo(date.myanmarDate);
 final holidays = MyanmarCalendar.getHolidayInfo(date.myanmarDate);
+
+// A calendar day, with no time or time zone involved.
+final day = MyanmarCalendar.getCompleteDateFor(2026, 10, 18);
+
+// Another time zone or holiday set for one call, without touching the
+// global configuration.
+final utcDay = MyanmarCalendar.getCompleteDate(
+  DateTime.now().toUtc(),
+  config: const CalendarConfig(timezoneOffset: 0),
+);
 ```
+
+### Dates, times and time zones
+
+- A **local** `DateTime` is read by its fields, as wall-clock time in the
+  configured time zone (Myanmar Time by default), whatever the device's zone.
+- A **UTC** `DateTime`, an epoch value (`fromMillisecondsSinceEpoch`,
+  `fromTimestamp`) and `now()` are **instants**, shown in the configured zone.
+- The Myanmar date depends only on the calendar day, never on the time of
+  day. For calendar grids, prefer `getCompleteDateFor(year, month, day)`.
+- `MyanmarDateTime.toUtc()` and `millisecondsSinceEpoch` give the instant;
+  `toDateTime()` gives the wall-clock fields.
 
 ### Instance-first client (recommended for isolation)
 

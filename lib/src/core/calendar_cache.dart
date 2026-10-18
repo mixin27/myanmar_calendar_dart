@@ -611,8 +611,16 @@ class CalendarCache {
     List<CustomHoliday>? customHolidays, {
     String namespace = '',
   }) {
+    // The result depends on how the value is read: a UTC DateTime as an
+    // instant, a local one by its wall-clock fields. Keying a local value by
+    // its instant would let the device's time zone pick a cached entry made
+    // for different fields.
     final dateKey = _namespaceKey(
-      dateTime.toUtc().microsecondsSinceEpoch.toString(),
+      dateTime.isUtc
+          ? 'u${dateTime.microsecondsSinceEpoch}'
+          : 'l${dateTime.year}-${dateTime.month}-${dateTime.day}'
+                'T${dateTime.hour}:${dateTime.minute}:${dateTime.second}'
+                '.${dateTime.millisecond}${dateTime.microsecond}',
       namespace,
     );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;

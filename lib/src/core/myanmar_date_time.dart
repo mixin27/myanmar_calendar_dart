@@ -35,24 +35,33 @@ class MyanmarDateTime {
     );
   }
 
-  /// Create from timestamp (seconds since epoch)
+  /// Create from timestamp (seconds since epoch), an instant.
   factory MyanmarDateTime.fromTimestamp(
     int timestamp, {
     CalendarConfig? config,
   }) {
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(
+      timestamp * 1000,
+      isUtc: true,
+    );
     return MyanmarDateTime.fromDateTime(dateTime, config: config);
   }
 
-  /// Creates Myanmar DateTime from milliseconds since epoch
+  /// Creates Myanmar DateTime from milliseconds since epoch.
+  ///
+  /// The value is an instant, shown in the configured time zone whatever the
+  /// device's zone. [isUtc] no longer changes the result and is kept only so
+  /// existing calls compile.
   factory MyanmarDateTime.fromMillisecondsSinceEpoch(
     int milliseconds, {
+    @Deprecated('Epoch values are instants; this flag has no effect.')
     bool isUtc = false,
     CalendarConfig? config,
   }) {
-    final dateTime = isUtc
-        ? DateTime.fromMillisecondsSinceEpoch(milliseconds, isUtc: true)
-        : DateTime.fromMillisecondsSinceEpoch(milliseconds);
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(
+      milliseconds,
+      isUtc: true,
+    );
 
     return MyanmarDateTime.fromDateTime(dateTime, config: config);
   }
@@ -81,11 +90,20 @@ class MyanmarDateTime {
     final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
+    // WesternDate's own Julian day is local time; convert its fields.
+    final jdn = converter.westernToJulian(
+      westernDate.year,
+      westernDate.month,
+      westernDate.day,
+      westernDate.hour,
+      westernDate.minute,
+      westernDate.second,
+    );
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
       _getHolidayCalculator(cfg),
-      westernDate.julianDayNumber,
+      jdn,
     );
   }
 
@@ -165,7 +183,10 @@ class MyanmarDateTime {
     );
   }
 
-  /// Creates Myanmar DateTime from DateTime object
+  /// Creates Myanmar DateTime from DateTime object.
+  ///
+  /// A local [dateTime]'s fields are read as wall-clock time in the
+  /// configured time zone; a UTC [dateTime] is an instant.
   factory MyanmarDateTime.fromDateTime(
     DateTime dateTime, {
     CalendarConfig? config,
@@ -173,14 +194,9 @@ class MyanmarDateTime {
     final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
-    final jdn = converter.westernToJulian(
-      dateTime.year,
-      dateTime.month,
-      dateTime.day,
-      dateTime.hour,
-      dateTime.minute,
-      dateTime.second,
-    );
+    // Local values are wall-clock time in the configured zone; UTC values
+    // are instants.
+    final jdn = converter.dateTimeToJulian(dateTime);
 
     return MyanmarDateTime._(
       converter,
@@ -198,16 +214,8 @@ class MyanmarDateTime {
     final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
-    // Get current UTC time and convert to Julian Day Number
-    final now = DateTime.now().toUtc();
-    final jdn = converter.westernToJulian(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-      now.second,
-    );
+    // The current instant, shown in the configured time zone.
+    final jdn = converter.dateTimeToJulian(DateTime.now().toUtc());
 
     return MyanmarDateTime._(
       converter,
@@ -597,23 +605,21 @@ class MyanmarDateTime {
   // CONVERSION METHODS
   // ============================================================================
 
-  /// Convert to Dart DateTime object
+  /// The wall-clock time in the configured zone, as a local [DateTime]
+  /// (its fields, not the device's zone, carry the meaning). Use [toUtc]
+  /// for the instant.
   DateTime toDateTime() {
     return westernDate.toDateTime();
   }
 
-  /// Convert to UTC DateTime object
-  DateTime toUtc() {
-    final localDateTime = toDateTime();
-    final offsetMinutes = (_converter.config.timezoneOffset * 60).round();
-    return localDateTime.subtract(Duration(minutes: offsetMinutes));
-  }
+  /// This instant as a UTC [DateTime].
+  DateTime toUtc() => _converter.julianToUtcDateTime(_julianDayNumber);
 
-  /// Get milliseconds since epoch
-  int get millisecondsSinceEpoch => toDateTime().millisecondsSinceEpoch;
+  /// Milliseconds since epoch of this instant.
+  int get millisecondsSinceEpoch => toUtc().millisecondsSinceEpoch;
 
-  /// Get microseconds since epoch
-  int get microsecondsSinceEpoch => toDateTime().microsecondsSinceEpoch;
+  /// Microseconds since epoch of this instant.
+  int get microsecondsSinceEpoch => toUtc().microsecondsSinceEpoch;
 
   /// Create a copy with different time components
   MyanmarDateTime copyWith({
