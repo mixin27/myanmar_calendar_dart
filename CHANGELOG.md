@@ -1,3 +1,28 @@
+## 3.0.1 (unreleased)
+
+### Fixes
+
+- A chronicle entry without `endJdn` is a one-day event. It used to count as
+  still ongoing, so `getChronicleFor(DateTime(1850))` returned all 263
+  entries back to the founding of Pagan. `getChroniclesBetween` and
+  `getChroniclesBetweenJdn` are fixed the same way
+- Chronicle entries are found on their own day. Their dates were stored as
+  midnight-based JDNs (`n + 0.5`) and landed on the following day; they are
+  now whole day numbers like `MyanmarDate.julianDayNumber`, and lookups match
+  any time from midnight to midnight
+- Dynasty lookups also match by whole day, so a `DateTime` at midnight on a
+  dynasty's first day finds it
+
+### Added
+
+- `getDynastiesFor`, `getDynastiesForJdn` and `getDynastiesForMyanmar` return
+  every dynasty on a day, ordered by start date; dynasties overlap
+  (Hanthawaddy with Pagan and Ava, Mrauk-U with Taungoo, Konbaung with the
+  British colonial period). `getDynastyFor` and friends return the
+  earliest-starting one
+- `ChronicleEntryData.startDay`, `endDay` and `overlapsJdn`, and
+  `DynastyData.includesJdn`
+
 ## 3.0.0
 
 A major release: calendar fixes checked day by day against the reference
