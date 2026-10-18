@@ -16,9 +16,12 @@ class ChronicleEntryData {
   final String id;
 
   /// Start Julian day number.
+  ///
+  /// Any time on the day works; the built-in entries use the whole
+  /// (noon-based) day number, like `MyanmarDate.julianDayNumber`.
   final double startJdn;
 
-  /// End Julian day number.
+  /// End Julian day number, inclusive. Null for a one-day event.
   final double? endJdn;
 
   /// Title.
@@ -35,10 +38,34 @@ class ChronicleEntryData {
   /// Ruler ID.
   final String? rulerId;
 
-  /// Check if the entry includes a Julian day number.
-  bool includesJdn(double jdn) =>
-      jdn >= startJdn && (endJdn == null || jdn <= endJdn!);
+  /// Day number of the first day of the entry.
+  int get startDay => _dayOf(startJdn);
+
+  /// Day number of the last day of the entry (the first day when [endJdn]
+  /// is null).
+  int get endDay => _dayOf(endJdn ?? startJdn);
+
+  /// Whether the entry covers the day of [jdn].
+  ///
+  /// An entry without [endJdn] is a one-day event.
+  bool includesJdn(double jdn) {
+    final day = _dayOf(jdn);
+    return day >= startDay && day <= endDay;
+  }
+
+  /// Whether the entry covers any day from [startJdn] to [endJdn].
+  bool overlapsJdn(double startJdn, double endJdn) {
+    final a = _dayOf(startJdn <= endJdn ? startJdn : endJdn);
+    final b = _dayOf(startJdn <= endJdn ? endJdn : startJdn);
+    return startDay <= b && endDay >= a;
+  }
 }
+
+/// The whole day number (noon-based) of the local day containing [jdn].
+///
+/// Times from midnight (`n - 0.5`) up to the next midnight belong to day `n`,
+/// matching `MyanmarDate.julianDayNumber`.
+int _dayOf(double jdn) => (jdn + 0.5).floor();
 
 /// Dynasty data.
 class DynastyData {
@@ -61,6 +88,12 @@ class DynastyData {
 
   /// End Julian day number.
   final double endJdn;
+
+  /// Whether the dynasty covers the day of [jdn], ends included.
+  bool includesJdn(double jdn) {
+    final day = _dayOf(jdn);
+    return day >= _dayOf(startJdn) && day <= _dayOf(endJdn);
+  }
 }
 
 /// Ruler data.

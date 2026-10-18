@@ -48,7 +48,7 @@ class ChronicleService {
     }
   }
 
-  /// Get entries by Julian day number.
+  /// Get entries covering the day of [jdn].
   List<ChronicleEntryData> byJdn(double jdn) {
     _ensureLoaded();
     // A few hundred entries: a linear scan is cheaper than an index.
@@ -59,13 +59,26 @@ class ChronicleService {
     return result;
   }
 
-  /// Get dynasty by Julian day number.
+  /// The earliest-starting dynasty covering the day of [jdn].
+  ///
+  /// Dynasties overlap (Hanthawaddy with Pagan and Ava, Mrauk-U with
+  /// Taungoo, Konbaung with the British colonial period); use
+  /// [dynastiesForJdn] for all of them.
   DynastyData? dynastyForJdn(double jdn) {
     _ensureLoaded();
-    for (final d in _dynasties!) {
-      if (jdn >= d.startJdn && jdn <= d.endJdn) return d;
+    for (final d in _sortedDynasties!) {
+      if (d.includesJdn(jdn)) return d;
     }
     return null;
+  }
+
+  /// Every dynasty covering the day of [jdn], ordered by start date.
+  List<DynastyData> dynastiesForJdn(double jdn) {
+    _ensureLoaded();
+    return [
+      for (final d in _sortedDynasties!)
+        if (d.includesJdn(jdn)) d,
+    ];
   }
 
   /// Get entries for a given dynasty ID (ordered by start date).
@@ -76,18 +89,14 @@ class ChronicleService {
     );
   }
 
-  /// Get chronicle entries whose span intersects the JDN range [startJdn, endJdn].
+  /// Get chronicle entries covering any day from [startJdn] to [endJdn].
+  ///
+  /// An entry without an end date is a one-day event.
   List<ChronicleEntryData> betweenJdn(double startJdn, double endJdn) {
     _ensureLoaded();
-    final a = startJdn <= endJdn ? startJdn : endJdn;
-    final b = startJdn <= endJdn ? endJdn : startJdn;
     final result = <ChronicleEntryData>[];
     for (final e in _entries!) {
-      final ej0 = e.startJdn;
-      final ej1 = e.endJdn ?? double.infinity;
-      if (ej0 <= b && ej1 >= a) {
-        result.add(e);
-      }
+      if (e.overlapsJdn(startJdn, endJdn)) result.add(e);
     }
     result.sort((x, y) => x.startJdn.compareTo(y.startJdn));
     return result;
