@@ -70,8 +70,9 @@ class CalendarConfig {
 
   /// Default timezone offset in hours (e.g., 6.5 for Myanmar Time)
   ///
-  /// This is used only for display purposes. Internal calculations
-  /// are done in UTC to maintain consistency.
+  /// Instants (UTC `DateTime`s, epoch values, `now()`) are shown in this
+  /// zone, and it decides which calendar day an instant falls on. Local
+  /// `DateTime`s are read as wall-clock time in this zone.
   ///
   /// Common Myanmar timezone offsets:
   /// - Yangon/Myanmar Time (MMT): UTC+6:30 (6.5)

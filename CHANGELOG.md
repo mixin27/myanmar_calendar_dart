@@ -1,3 +1,12 @@
+## Unreleased
+
+- Fix `MyanmarCalendarClient()` without a config computing with the global
+  configuration while reporting the defaults
+- Fix complete-date cache keys that could collide for sub-second times
+- Fix `MyanmarCalendar.version` reporting 2.0.1 in the 2.0.2 release
+- Correct the `CalendarConfig.timezoneOffset` docs: it decides which calendar
+  day an instant falls on
+
 ## 2.0.2
 
 - Fix `getCompleteDate` and `westernToMyanmar` returning the next Myanmar day

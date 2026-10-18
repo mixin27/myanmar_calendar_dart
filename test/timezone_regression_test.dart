@@ -132,6 +132,22 @@ void main() {
     expect(fromUtc.western.minute, 30);
   });
 
+  test('cache keys keep sub-second times apart', () {
+    // 1 ms + 23 µs and 12 ms + 3 µs once produced the same key.
+    final a = DateTime(2026, 10, 18, 9, 0, 0, 1, 23);
+    final b = DateTime(2026, 10, 18, 9, 0, 0, 12, 3);
+    expect(MyanmarCalendar.getCompleteDate(a).western.millisecond, 1);
+    expect(MyanmarCalendar.getCompleteDate(b).western.millisecond, 12);
+  });
+
+  test('a client without a config ignores the global one', () {
+    MyanmarCalendar.configure(timezoneOffset: 0);
+    final client = MyanmarCalendarClient();
+    final day = client.getCompleteDate(DateTime.utc(2026, 10, 18, 20));
+    expect(client.config.timezoneOffset, 6.5);
+    expect(day.western.day, 19); // Myanmar Time, not the global UTC+0
+  });
+
   group('per-call config', () {
     test('changes only that call', () {
       final instant = DateTime.utc(2026, 10, 18, 20);

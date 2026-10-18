@@ -34,10 +34,13 @@ class MyanmarCalendarClient {
   }) : _config = config ?? const CalendarConfig(),
        _cacheConfig = cacheConfig,
        _useGlobalCache = useGlobalCache,
+       // Never fall back to the global config: a client is isolated.
        _service = useGlobalCache
-           ? MyanmarCalendarService.withGlobalCache(config: config)
+           ? MyanmarCalendarService.withGlobalCache(
+               config: config ?? const CalendarConfig(),
+             )
            : MyanmarCalendarService.withIndependentCache(
-               config: config,
+               config: config ?? const CalendarConfig(),
                cacheConfig: cacheConfig,
              ),
        _chronicles = ChronicleService(

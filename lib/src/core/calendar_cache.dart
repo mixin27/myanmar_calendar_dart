@@ -618,9 +618,8 @@ class CalendarCache {
     final dateKey = _namespaceKey(
       dateTime.isUtc
           ? 'u${dateTime.microsecondsSinceEpoch}'
-          : 'l${dateTime.year}-${dateTime.month}-${dateTime.day}'
-                'T${dateTime.hour}:${dateTime.minute}:${dateTime.second}'
-                '.${dateTime.millisecond}${dateTime.microsecond}',
+          // The wall-clock fields as one number: unambiguous and cheap.
+          : 'l${DateTime.utc(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.millisecond, dateTime.microsecond).microsecondsSinceEpoch}',
       namespace,
     );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
