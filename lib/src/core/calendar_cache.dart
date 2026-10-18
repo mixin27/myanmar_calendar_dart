@@ -15,7 +15,7 @@ typedef CompleteDateResolver = CompleteDate Function(DateTime dateTime);
 class CacheConfig {
   /// Create a new [CacheConfig] instance
   const CacheConfig({
-    this.maxCompleteDateCacheSize = 100,
+    this.maxCompleteDateCacheSize = 400,
     this.maxMyanmarDateCacheSize = 200,
     this.maxShanDateCacheSize = 200,
     this.maxWesternDateCacheSize = 200,
@@ -90,13 +90,16 @@ class CacheConfig {
 
 /// Cache entry with timestamp for TTL support
 class _CacheEntry<T> {
-  _CacheEntry(this.value) : timestamp = DateTime.now();
+  _CacheEntry(this.value) : _createdMs = _clock.elapsedMilliseconds;
   final T value;
-  final DateTime timestamp;
+  final int _createdMs;
+
+  /// Monotonic and cheaper than reading the wall clock on every write.
+  static final _clock = Stopwatch()..start();
 
   bool isExpired(int ttl) {
     if (ttl == 0) return false;
-    return DateTime.now().difference(timestamp).inSeconds > ttl;
+    return _clock.elapsedMilliseconds - _createdMs > ttl * 1000;
   }
 }
 

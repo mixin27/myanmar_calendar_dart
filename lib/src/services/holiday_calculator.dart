@@ -80,40 +80,17 @@ class HolidayCalculator {
     List<CustomHoliday> customHolidays,
     Language language,
   ) {
-    final dateKey = '${date.year}-${date.month}-${date.day}';
-
-    // Include disabled holidays in cache key
-    final disabledHolidaysKey =
-        _config.disabledHolidays.map((e) => e.name).toList()..sort();
-
-    // Include year-specific disabled holidays (only for the current year)
-    final westernDate = _jdnToWestern(date.julianDayNumber);
-    final westernYear = westernDate['year']!;
-    final westernMonth = westernDate['month']!;
-    final westernDay = westernDate['day']!;
-
-    final yearSpecificDisabled =
-        _config.disabledHolidaysByYear[westernYear]
-                  ?.map((e) => e.name)
-                  .toList() ??
-              []
-          ..sort();
-
-    // Include date-specific disabled holidays
-    final dateSpecificKey =
-        '$westernYear-${westernMonth.toString().padLeft(2, '0')}-${westernDay.toString().padLeft(2, '0')}';
-    final dateSpecificDisabled =
-        _config.disabledHolidaysByDate[dateSpecificKey]
-                  ?.map((e) => e.name)
-                  .toList() ??
-              []
-          ..sort();
-
-    final customHolidayFingerprints = customHolidays.map((holiday) {
-      return holiday.cacheDescriptor;
-    }).toList()..sort();
-
-    return '$dateKey|lang:${language.code}|${disabledHolidaysKey.join(',')}|${yearSpecificDisabled.join(',')}|${dateSpecificDisabled.join(',')}|${customHolidayFingerprints.join(',')}';
+    // The namespace already covers the config, including its disabled and
+    // custom holidays, and a Myanmar date fixes the Western date. Only a
+    // custom-holiday list other than the config's needs adding.
+    final key = '${date.year}-${date.month}-${date.day}|${language.code}';
+    if (customHolidays.isEmpty ||
+        identical(customHolidays, _config.customHolidays)) {
+      return key;
+    }
+    final fingerprints = customHolidays.map((h) => h.cacheDescriptor).toList()
+      ..sort();
+    return '$key|${fingerprints.join(',')}';
   }
 
   String _t(String key, Language language) {

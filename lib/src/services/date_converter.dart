@@ -488,7 +488,14 @@ class DateConverter {
   // ============================================================================
 
   /// Get Myanmar year information
-  Map<String, double> _getMyanmarYearInfo(int myear) {
+  /// Year info depends only on the year, so it's computed once per year
+  /// for the whole process. A month grid used to recompute it for every day.
+  static final _yearInfoMemo = <int, Map<String, double>>{};
+
+  Map<String, double> _getMyanmarYearInfo(int myear) =>
+      _yearInfoMemo[myear] ??= Map.unmodifiable(_computeMyanmarYearInfo(myear));
+
+  Map<String, double> _computeMyanmarYearInfo(int myear) {
     var offset = 0;
     Map<String, double> prevYearInfo;
     double nd = 0;

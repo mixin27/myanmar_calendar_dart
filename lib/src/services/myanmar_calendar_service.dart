@@ -247,20 +247,21 @@ class MyanmarCalendarService {
     final completeDateNamespace =
         'complete_date|$_cacheNamespace|lang:${resolvedLanguage.code}';
 
-    // Try to get from cache
+    // One cache entry per calendar day: everything but the Western time
+    // depends only on the day, so asking for "now" reuses it.
+    final wall = _dateConverter.wallClockOf(dateTime);
+    final westernDate = WesternDate.fromDateTime(wall);
+    final dayKey = DateTime.utc(wall.year, wall.month, wall.day);
     final cached = _cache.getCompleteDate(
-      dateTime,
-      customHolidays: _config.customHolidayRules,
+      dayKey,
       namespace: completeDateNamespace,
     );
     if (cached != null) {
-      return cached;
+      return cached.western == westernDate
+          ? cached
+          : cached.copyWith(western: westernDate);
     }
 
-    // Calculate if not in cache
-    final westernDate = WesternDate.fromDateTime(
-      _dateConverter.wallClockOf(dateTime),
-    );
     final myanmarDate = _dateConverter.julianToMyanmar(
       _dateConverter.dayJulian(dateTime),
     );
@@ -280,11 +281,10 @@ class MyanmarCalendarService {
       holidays: holidayInfo,
     );
 
-    // Store in cache
+    // The namespace already covers the config's custom holidays.
     _cache.putCompleteDate(
-      dateTime,
+      dayKey,
       completeDate,
-      customHolidays: _config.customHolidayRules,
       namespace: completeDateNamespace,
     );
 

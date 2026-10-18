@@ -115,7 +115,13 @@ class CalendarConfig {
   ///
   /// This is used to isolate cache entries across different configurations
   /// when sharing a global cache instance.
-  String get cacheNamespace {
+  String get cacheNamespace => _namespaces[this] ??= _buildCacheNamespace();
+
+  /// [cacheNamespace] per config object; it sorts and joins every holiday
+  /// rule, and it was rebuilt on every lookup.
+  static final _namespaces = Expando<String>('CalendarConfig.cacheNamespace');
+
+  String _buildCacheNamespace() {
     final globalDisabled = disabledHolidays.map((e) => e.name).toList()..sort();
 
     final yearSpecific = disabledHolidaysByYear.entries.toList()

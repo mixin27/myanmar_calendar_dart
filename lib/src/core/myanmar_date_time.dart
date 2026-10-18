@@ -251,7 +251,9 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   static final Map<String, DateConverter> _converters = {};
   static final Map<String, HolidayCalculator> _holidayCalculators = {};
 
-  static final AstroCalculator _sharedAstroCalculator = AstroCalculator(
+  // Recreated by clearSharedInstances, so it follows the current global
+  // cache after configureCache (it used to keep writing to the old one).
+  static AstroCalculator _sharedAstroCalculator = AstroCalculator(
     cache: CalendarCache.global(),
   );
   static final FormatService _sharedFormatService = FormatService();
@@ -263,12 +265,24 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   static void clearSharedInstances() {
     _converters.clear();
     _holidayCalculators.clear();
+    _sharedAstroCalculator = AstroCalculator(cache: CalendarCache.global());
+  }
+
+  /// Converters and calculators kept per config, most recent last.
+  static const _maxSharedPerConfig = 16;
+
+  static T _remember<T>(Map<String, T> map, String key, T Function() create) {
+    final value = map.remove(key) ?? create();
+    map[key] = value;
+    if (map.length > _maxSharedPerConfig) map.remove(map.keys.first);
+    return value;
   }
 
   /// Get or create a shared converter for the given config
   static DateConverter _getConverter(CalendarConfig config) {
     final key = config.cacheNamespace;
-    return _converters.putIfAbsent(
+    return _remember(
+      _converters,
       key,
       () => DateConverter(
         config,
@@ -281,7 +295,8 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Get or create a shared holiday calculator for the given config
   static HolidayCalculator _getHolidayCalculator(CalendarConfig config) {
     final key = config.cacheNamespace;
-    return _holidayCalculators.putIfAbsent(
+    return _remember(
+      _holidayCalculators,
       key,
       () => HolidayCalculator(cache: CalendarCache.global(), config: config),
     );
