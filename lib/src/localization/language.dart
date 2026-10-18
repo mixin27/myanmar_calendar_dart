@@ -16,8 +16,7 @@ enum Language {
   shan('shan'),
 
   /// Karen
-  karen('karen')
-  ;
+  karen('karen');
 
   const Language(this.code);
 

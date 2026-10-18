@@ -108,8 +108,7 @@ enum _CacheProfile {
   defaultProfile,
   highPerformance,
   memoryEfficient,
-  disabled
-  ;
+  disabled;
 
   static _CacheProfile parse(String value) {
     switch (value.toLowerCase()) {
