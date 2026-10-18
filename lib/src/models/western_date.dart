@@ -1,3 +1,5 @@
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
+
 /// Represents a Western (Gregorian/Julian) calendar date
 class WesternDate {
   /// Create a new western date
@@ -91,4 +93,26 @@ class WesternDate {
   String toString() {
     return 'WesternDate($year-$month-$day $hour:$minute:$second)';
   }
+
+  /// [weekday] as `DateTime.weekday` (1 Monday … 7 Sunday); [weekday]
+  /// itself counts 0 Saturday … 6 Friday.
+  int get dartWeekday => dartWeekdayFromMyanmar(weekday);
+
+  /// Equal when the date and time fields match. (Without this, equal
+  /// [CompleteDate]s were never `==`.)
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WesternDate &&
+          other.year == year &&
+          other.month == month &&
+          other.day == day &&
+          other.hour == hour &&
+          other.minute == minute &&
+          other.second == second &&
+          other.millisecond == millisecond;
+
+  @override
+  int get hashCode =>
+      Object.hash(year, month, day, hour, minute, second, millisecond);
 }

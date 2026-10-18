@@ -1,4 +1,8 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
+import 'package:myanmar_calendar_dart/src/localization/language.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
 import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
@@ -48,8 +52,20 @@ class CalendarConfig {
   /// Get the package-wide global configuration
   static CalendarConfig get global => _global;
 
-  /// Set the package-wide global configuration
-  static set global(CalendarConfig config) => _global = config;
+  /// Set the package-wide global configuration.
+  ///
+  /// `MyanmarCalendar.configure` is the usual way; assigning here directly is
+  /// also safe, because shared services and caches are refreshed either way.
+  static set global(CalendarConfig config) {
+    if (identical(config, _global)) return;
+    _global = config;
+    onGlobalChanged?.call();
+  }
+
+  /// Called after [global] changes; set by `MyanmarCalendar` to drop state
+  /// built for the previous configuration.
+  @internal
+  static void Function()? onGlobalChanged;
 
   /// Sasana year type
   ///
@@ -70,8 +86,9 @@ class CalendarConfig {
 
   /// Default timezone offset in hours (e.g., 6.5 for Myanmar Time)
   ///
-  /// This is used only for display purposes. Internal calculations
-  /// are done in UTC to maintain consistency.
+  /// Instants (UTC `DateTime`s, epoch values, `now()`) are shown in this
+  /// zone, and it decides which calendar day an instant falls on. Local
+  /// `DateTime`s are read as wall-clock time in this zone.
   ///
   /// Common Myanmar timezone offsets:
   /// - Yangon/Myanmar Time (MMT): UTC+6:30 (6.5)
@@ -104,6 +121,37 @@ class CalendarConfig {
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
+  /// [defaultLanguage] as a [Language] (English for an unknown code; see
+  /// [validate]).
+  Language get language => Language.fromCode(defaultLanguage);
+
+  /// Throws [InvalidConfigurationException] for a value outside its range or
+  /// an unknown [defaultLanguage]. The constructor only checks these with
+  /// asserts, which release builds skip.
+  void validate() {
+    Never invalid(String parameter, Object value) =>
+        throw InvalidConfigurationException(parameter: parameter, value: value);
+    if (sasanaYearType < 0 || sasanaYearType > 2) {
+      invalid('sasanaYearType', sasanaYearType);
+    }
+    if (calendarType < 0 || calendarType > 2) {
+      invalid('calendarType', calendarType);
+    }
+    if (timezoneOffset < -12 || timezoneOffset > 14) {
+      invalid('timezoneOffset', timezoneOffset);
+    }
+    if (gregorianStart <= 0) invalid('gregorianStart', gregorianStart);
+    if (Language.tryFromCode(defaultLanguage) == null) {
+      invalid('defaultLanguage', defaultLanguage);
+    }
+  }
+
+  /// [calendarType] as a [CalendarSystem].
+  CalendarSystem get calendarSystem => CalendarSystem.fromCode(calendarType);
+
+  /// [sasanaYearType] as a [SasanaYearType].
+  SasanaYearType get sasanaYear => SasanaYearType.fromCode(sasanaYearType);
+
   /// Convert local time to UTC Julian Day Number
   double localToUtc(double localJdn) => localJdn - timezoneOffsetInDays;
 
@@ -114,7 +162,13 @@ class CalendarConfig {
   ///
   /// This is used to isolate cache entries across different configurations
   /// when sharing a global cache instance.
-  String get cacheNamespace {
+  String get cacheNamespace => _namespaces[this] ??= _buildCacheNamespace();
+
+  /// [cacheNamespace] per config object; it sorts and joins every holiday
+  /// rule, and it was rebuilt on every lookup.
+  static final _namespaces = Expando<String>('CalendarConfig.cacheNamespace');
+
+  String _buildCacheNamespace() {
     final globalDisabled = disabledHolidays.map((e) => e.name).toList()..sort();
 
     final yearSpecific = disabledHolidaysByYear.entries.toList()
@@ -200,11 +254,12 @@ class CalendarConfig {
           other.disabledHolidays,
           disabledHolidays,
         ) &&
-        const MapEquality<int, List<HolidayId>>().equals(
+        // Deep: lists built separately with the same holidays are equal.
+        const DeepCollectionEquality().equals(
           other.disabledHolidaysByYear,
           disabledHolidaysByYear,
         ) &&
-        const MapEquality<String, List<HolidayId>>().equals(
+        const DeepCollectionEquality().equals(
           other.disabledHolidaysByDate,
           disabledHolidaysByDate,
         ) &&
@@ -221,10 +276,8 @@ class CalendarConfig {
         defaultLanguage.hashCode ^
         const ListEquality<CustomHoliday>().hash(customHolidays) ^
         const ListEquality<HolidayId>().hash(disabledHolidays) ^
-        const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear) ^
-        const MapEquality<String, List<HolidayId>>().hash(
-          disabledHolidaysByDate,
-        ) ^
+        const DeepCollectionEquality().hash(disabledHolidaysByYear) ^
+        const DeepCollectionEquality().hash(disabledHolidaysByDate) ^
         westernHolidayProvider.cacheKey.hashCode;
   }
 }

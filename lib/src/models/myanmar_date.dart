@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 
 /// Represents a Myanmar calendar date with all relevant properties
 @immutable
@@ -41,6 +42,16 @@ class MyanmarDate {
 
   /// Weekday [0=Saturday, 1=Sunday, ..., 6=Friday]
   final int weekday;
+
+  /// [moonPhase] as a [MoonPhase].
+  MoonPhase get phase => MoonPhase.fromCode(moonPhase);
+
+  /// [yearType] as a [MyanmarYearType].
+  MyanmarYearType get yearKind => MyanmarYearType.fromCode(yearType);
+
+  /// [weekday] as `DateTime.weekday` (1 Monday … 7 Sunday); [weekday]
+  /// itself counts 0 Saturday … 6 Friday.
+  int get dartWeekday => dartWeekdayFromMyanmar(weekday);
 
   /// Julian Day Number
   final double julianDayNumber;
@@ -89,8 +100,10 @@ class MyanmarDate {
   }
 
   @override
-  bool operator ==(covariant MyanmarDate other) {
+  bool operator ==(Object other) {
     if (identical(this, other)) return true;
+    // Comparing with another type is false, not a TypeError.
+    if (other is! MyanmarDate) return false;
 
     return other.year == year &&
         other.month == month &&

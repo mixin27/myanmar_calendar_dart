@@ -20,17 +20,21 @@ class ChronicleService {
   /// List of dynasties.
   List<DynastyData>? _dynasties;
 
-  /// Simple indices.
-  List<ChronicleEntryData>? _sortedByStart;
+  /// Indices built on first use.
   Map<String, List<ChronicleEntryData>>? _dynastyToEntries;
+  List<DynastyData>? _sortedDynasties;
+  Map<String, DynastyData>? _dynastiesById;
 
   /// Ensure the data is loaded.
   void _ensureLoaded() {
     _entries ??= kChronicleEntries;
     _dynasties ??= kDynasties;
 
-    _sortedByStart ??= List<ChronicleEntryData>.from(_entries!)
-      ..sort((a, b) => a.startJdn.compareTo(b.startJdn));
+    _sortedDynasties ??= List<DynastyData>.unmodifiable(
+      List<DynastyData>.from(_dynasties!)
+        ..sort((a, b) => a.startJdn.compareTo(b.startJdn)),
+    );
+    _dynastiesById ??= {for (final d in _dynasties!) d.id: d};
 
     if (_dynastyToEntries == null) {
       _dynastyToEntries = <String, List<ChronicleEntryData>>{};
@@ -47,7 +51,7 @@ class ChronicleService {
   /// Get entries by Julian day number.
   List<ChronicleEntryData> byJdn(double jdn) {
     _ensureLoaded();
-    // For moderate data sizes, linear filter is fine. Otherwise binary search over _sortedByStart + span check.
+    // A few hundred entries: a linear scan is cheaper than an index.
     final result = <ChronicleEntryData>[];
     for (final e in _entries!) {
       if (e.includesJdn(jdn)) result.add(e);
@@ -92,17 +96,12 @@ class ChronicleService {
   /// List all dynasties (ordered by start date).
   List<DynastyData> allDynasties() {
     _ensureLoaded();
-    final list = List<DynastyData>.from(_dynasties!)
-      ..sort((a, b) => a.startJdn.compareTo(b.startJdn));
-    return list;
+    return _sortedDynasties!;
   }
 
   /// Lookup a dynasty by ID.
   DynastyData? dynastyById(String dynastyId) {
     _ensureLoaded();
-    for (final d in _dynasties!) {
-      if (d.id == dynastyId) return d;
-    }
-    return null;
+    return _dynastiesById![dynastyId];
   }
 }

@@ -1,7 +1,9 @@
 import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
@@ -11,6 +13,7 @@ import 'package:myanmar_calendar_dart/src/services/astro_calculator.dart';
 import 'package:myanmar_calendar_dart/src/services/date_converter.dart';
 import 'package:myanmar_calendar_dart/src/services/format_service.dart';
 import 'package:myanmar_calendar_dart/src/services/holiday_calculator.dart';
+import 'package:myanmar_calendar_dart/src/services/myanmar_calendar_service.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_constants.dart';
 import 'package:myanmar_calendar_dart/src/utils/calendar_utils.dart';
 
@@ -22,15 +25,15 @@ import 'package:myanmar_calendar_dart/src/utils/calendar_utils.dart';
 /// - Factory constructors for different use cases
 /// - Integration with Dart's DateTime class
 /// - Astrological and holiday information access
-class MyanmarDateTime {
+class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Create from Map (deserialization)
   factory MyanmarDateTime.fromMap(
     Map<String, dynamic> map, {
     CalendarConfig? config,
   }) {
     final completeDate = CompleteDate.fromMap(map);
-    return MyanmarDateTime.fromJulianDay(
-      completeDate.julianDayNumber,
+    return MyanmarDateTime.fromMyanmarDate(
+      completeDate.myanmar,
       config: config,
     );
   }
@@ -50,12 +53,9 @@ class MyanmarDateTime {
   /// Creates Myanmar DateTime from milliseconds since epoch.
   ///
   /// The value is an instant, shown in the configured time zone whatever the
-  /// device's zone. [isUtc] no longer changes the result and is kept only so
-  /// existing calls compile.
+  /// device's zone.
   factory MyanmarDateTime.fromMillisecondsSinceEpoch(
     int milliseconds, {
-    @Deprecated('Epoch values are instants; this flag has no effect.')
-    bool isUtc = false,
     CalendarConfig? config,
   }) {
     final dateTime = DateTime.fromMillisecondsSinceEpoch(
@@ -115,11 +115,12 @@ class MyanmarDateTime {
     final cfg = config ?? CalendarConfig.global;
     final converter = _getConverter(cfg);
 
+    // MyanmarDate holds the local day number (local noon).
     return MyanmarDateTime._(
       converter,
       _sharedAstroCalculator,
       _getHolidayCalculator(cfg),
-      myanmarDate.julianDayNumber,
+      myanmarDate.julianDayNumber.roundToDouble() - cfg.timezoneOffsetInDays,
     );
   }
 
@@ -181,6 +182,41 @@ class MyanmarDateTime {
       _getHolidayCalculator(cfg),
       jdn,
     );
+  }
+
+  /// Parses a Myanmar date such as `1385/10/1` or `1.10.1385` (see
+  /// `CalendarUtils.parseMyanmarDate`). Throws [DateParseException].
+  factory MyanmarDateTime.parseMyanmar(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    final date = CalendarUtils.parseMyanmarDate(
+      dateString,
+      service: MyanmarCalendarService.withGlobalCache(
+        config: config ?? CalendarConfig.global,
+      ),
+    );
+    return MyanmarDateTime.fromMyanmarDate(date, config: config);
+  }
+
+  /// Parses an ISO 8601 Western date such as `2024-01-01` (as
+  /// `DateTime.parse` does). Throws [DateParseException].
+  factory MyanmarDateTime.parseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    final DateTime dateTime;
+    try {
+      dateTime = DateTime.parse(dateString);
+    } on FormatException catch (e, stack) {
+      throw DateParseException(
+        dateString: dateString,
+        expectedFormat: 'ISO 8601, such as 2024-01-01',
+        originalError: e,
+        stackTrace: stack,
+      );
+    }
+    return MyanmarDateTime.fromDateTime(dateTime, config: config);
   }
 
   /// Creates Myanmar DateTime from DateTime object.
@@ -250,7 +286,9 @@ class MyanmarDateTime {
   static final Map<String, DateConverter> _converters = {};
   static final Map<String, HolidayCalculator> _holidayCalculators = {};
 
-  static final AstroCalculator _sharedAstroCalculator = AstroCalculator(
+  // Recreated by clearSharedInstances, so it follows the current global
+  // cache after configureCache (it used to keep writing to the old one).
+  static AstroCalculator _sharedAstroCalculator = AstroCalculator(
     cache: CalendarCache.global(),
   );
   static final FormatService _sharedFormatService = FormatService();
@@ -262,12 +300,24 @@ class MyanmarDateTime {
   static void clearSharedInstances() {
     _converters.clear();
     _holidayCalculators.clear();
+    _sharedAstroCalculator = AstroCalculator(cache: CalendarCache.global());
+  }
+
+  /// Converters and calculators kept per config, most recent last.
+  static const _maxSharedPerConfig = 16;
+
+  static T _remember<T>(Map<String, T> map, String key, T Function() create) {
+    final value = map.remove(key) ?? create();
+    map[key] = value;
+    if (map.length > _maxSharedPerConfig) map.remove(map.keys.first);
+    return value;
   }
 
   /// Get or create a shared converter for the given config
   static DateConverter _getConverter(CalendarConfig config) {
     final key = config.cacheNamespace;
-    return _converters.putIfAbsent(
+    return _remember(
+      _converters,
       key,
       () => DateConverter(
         config,
@@ -280,7 +330,8 @@ class MyanmarDateTime {
   /// Get or create a shared holiday calculator for the given config
   static HolidayCalculator _getHolidayCalculator(CalendarConfig config) {
     final key = config.cacheNamespace;
-    return _holidayCalculators.putIfAbsent(
+    return _remember(
+      _holidayCalculators,
       key,
       () => HolidayCalculator(cache: CalendarCache.global(), config: config),
     );
@@ -328,6 +379,9 @@ class MyanmarDateTime {
   /// Year type (0=common, 1=little watat, 2=big watat)
   int get yearType => myanmarDate.yearType;
 
+  /// [yearType] as a [MyanmarYearType].
+  MyanmarYearType get yearKind => myanmarDate.yearKind;
+
   /// Sasana year
   int get sasanaYear => myanmarDate.sasanaYear;
 
@@ -336,6 +390,9 @@ class MyanmarDateTime {
 
   /// Moon phase (0=waxing, 1=full moon, 2=waning, 3=new moon)
   int get moonPhase => myanmarDate.moonPhase;
+
+  /// [moonPhase] as a [MoonPhase].
+  MoonPhase get phase => myanmarDate.phase;
 
   /// Fortnight day (1-15)
   int get fortnightDay => myanmarDate.fortnightDay;
@@ -597,6 +654,7 @@ class MyanmarDateTime {
 
   /// Compare this with another Myanmar DateTime
   /// Returns -1 if before, 0 if same, 1 if after
+  @override
   int compareTo(MyanmarDateTime other) {
     return _julianDayNumber.compareTo(other._julianDayNumber);
   }
@@ -621,7 +679,8 @@ class MyanmarDateTime {
   /// Microseconds since epoch of this instant.
   int get microsecondsSinceEpoch => toUtc().microsecondsSinceEpoch;
 
-  /// Create a copy with different time components
+  /// A copy with some Western date and time fields changed. Times are
+  /// whole seconds.
   MyanmarDateTime copyWith({
     int? year,
     int? month,
@@ -629,8 +688,6 @@ class MyanmarDateTime {
     int? hour,
     int? minute,
     int? second,
-    int? millisecond,
-    bool? isUtc,
   }) {
     final currentWestern = westernDate;
 
@@ -686,28 +743,31 @@ class MyanmarDateTime {
 
   /// Get the start of the day (00:00:00)
   MyanmarDateTime get startOfDay {
-    return copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
+    return copyWith(hour: 0, minute: 0, second: 0);
   }
 
-  /// Get the end of the day (23:59:59.999)
+  /// Get the end of the day (23:59:59)
   MyanmarDateTime get endOfDay {
-    return copyWith(hour: 23, minute: 59, second: 59, millisecond: 999);
+    return copyWith(hour: 23, minute: 59, second: 59);
   }
 
   /// Get the start of the month (first day, 00:00:00)
   MyanmarDateTime get startOfMonth {
-    return copyWith(day: 1, hour: 0, minute: 0, second: 0, millisecond: 0);
+    return copyWith(day: 1, hour: 0, minute: 0, second: 0);
   }
 
-  /// Get the end of the month (last day, 23:59:59.999)
+  /// Get the end of the Western month (last day, 23:59:59)
   MyanmarDateTime get endOfMonth {
-    final daysInMonth = monthLength;
+    // The Western month, like startOfMonth. (It used the Myanmar month's
+    // length as a Western day, so a 30-day Myanmar month threw in
+    // February.)
+    final western = westernDate;
+    final daysInMonth = DateTime.utc(western.year, western.month + 1, 0).day;
     return copyWith(
       day: daysInMonth,
       hour: 23,
       minute: 59,
       second: 59,
-      millisecond: 999,
     );
   }
 
@@ -795,27 +855,26 @@ class MyanmarDateTime {
   // STATIC UTILITY METHODS
   // ============================================================================
 
-  /// Parse Myanmar date string
-  static MyanmarDateTime? parseMyanmar(
-    String dateString, {
-    CalendarConfig? config,
-  }) {
-    final parsedDate = CalendarUtils.parseMyanmarDateString(dateString);
-    if (parsedDate != null) {
-      return MyanmarDateTime.fromMyanmarDate(parsedDate, config: config);
-    }
-    return null;
-  }
-
-  /// Parse Western date string
-  static MyanmarDateTime? parseWestern(
+  /// Like [parseMyanmar], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseMyanmar(
     String dateString, {
     CalendarConfig? config,
   }) {
     try {
-      final dateTime = DateTime.parse(dateString);
-      return MyanmarDateTime.fromDateTime(dateTime, config: config);
-    } catch (e) {
+      return MyanmarDateTime.parseMyanmar(dateString, config: config);
+    } on DateParseException {
+      return null;
+    }
+  }
+
+  /// Like [parseWestern], but returns null instead of throwing.
+  static MyanmarDateTime? tryParseWestern(
+    String dateString, {
+    CalendarConfig? config,
+  }) {
+    try {
+      return MyanmarDateTime.parseWestern(dateString, config: config);
+    } on DateParseException {
       return null;
     }
   }

@@ -1,3 +1,107 @@
+## 3.0.0
+
+A major release: calendar fixes checked day by day against the reference
+`ceMmDateTime.js`, one code path for the static and instance APIs, typed
+values and errors. See [MIGRATION.md](MIGRATION.md) for upgrading from 2.x.
+
+### Breaking changes
+
+- Invalid input throws typed exceptions (`InvalidMyanmarDateException`,
+  `InvalidWesternDateException`, `DateParseException`,
+  `InvalidConfigurationException`, all `MyanmarCalendarException`s) instead
+  of `ArgumentError`. Exceptions that were never thrown are removed
+  (`CacheException`, `DateConversionException`, `DateOutOfRangeException`,
+  `AstrologicalCalculationException`, `HolidayCalculationException`)
+- Myanmar dates that don't exist (day 30 of a 29-day month, First Waso in a
+  common year) are rejected instead of moving to a neighbouring day
+- `parseMyanmar` and `parseWestern` throw `DateParseException`; use
+  `tryParseMyanmar` and `tryParseWestern` for null. Myanmar parsing is strict:
+  the whole string, year first or day first, one separator
+- `MyanmarDate.julianDayNumber` is the whole local day number of the day
+- `getCacheStatistics()` returns `CalendarCacheStatistics` (`toMap()` for a
+  map); `getTypedCacheStatistics` and `CalendarCache.getTypedStatistics` are
+  removed
+- `AIPromptService` moves to `package:myanmar_calendar_dart/ai.dart`;
+  `MyanmarCalendar.generateAIPrompt` is removed
+- `WesternHolidayProvider` is abstract: custom providers implement `cacheKey`
+  and `matches`
+- `convertMyanmarDates` takes `(year, month, day)` records
+- `MyanmarDateTime.copyWith` drops the ignored `millisecond` and `isUtc`;
+  `fromMillisecondsSinceEpoch` drops `isUtc`
+- `createClient()` without a config uses the defaults, like
+  `MyanmarCalendarClient()`, not the global configuration
+- Clients validate their config and throw `InvalidConfigurationException`
+  for an unknown language code or out-of-range values
+- Holidays now match the reference (see Fixed), so some days gain or lose a
+  holiday
+- The Shan year turns over at Shan New Year (Nadaw 1)
+- The minimum SDK is now Dart 3.8 (was 3.11), so more Flutter versions can use
+  the package
+
+### Fixed
+
+- `isWatatYear` and `getYearType` returned the previous year's type
+- `getMyanmarMonth` returned nothing for Tagu, for Kason in years whose New
+  Year falls in Kason, and for Late Kason; this also fixes
+  `getWesternDatesForMyanmarMonth`, `findAuspiciousDays` and sabbath lookups
+- Day arithmetic (`addDays`, `addMonths`, `findNextMoonPhase`, `daysBetween`,
+  `fromMyanmarDate`) applied the time-zone offset again on each step;
+  `addMonths` keeps the day number across a month split by New Year
+- `findMoonPhaseDatesInYear` left out Late Tagu and Late Kason
+- `endOfMonth` used the Myanmar month's length as a Western day and threw in
+  February
+- Holidays match `cal_holiday`/`cal_holiday2`: Tazaungmon 14 is a public
+  holiday; no extra "Holiday" on Thadingyut full moon; New Year's Day is a
+  public holiday only 2018-2021 (an anniversary before); 30-31 December 2017
+  and 31 December to 2021; the 2019-2021 substitute holidays; Mothers' Day
+  from ME 1356; Easter and Good Friday from 1876
+- Under the British calendar, years before 1753 use the Julian leap rule
+  (29 February 1700 exists)
+- `MyanmarCalendarClient()` without a config used the global configuration
+- Facade helpers that take a date kept the global config instead of the
+  date's; description helpers ignored the configured language
+- Assigning `CalendarConfig.global` directly left stale services and caches
+- The shared astro calculator kept writing to the old cache after
+  `configureCache`
+- Changing translations didn't reach cached holiday names
+- Config equality treated equal per-year/per-date holiday maps as different
+- `==` on `MyanmarDate`, `CompleteDate` and `ValidationResult` threw for other
+  types; `WesternDate` had no value equality; `ValidationResult` hashed by
+  identity
+- Julian-day-to-time conversion could give times like 02:29:60
+- `MyanmarCalendar.version` was wrong
+
+### Added
+
+- `MyanmarCalendarClient` has the whole API; `MyanmarCalendar` delegates to
+  it, and most facade methods take an optional `config:`
+- `HolidayInfo.entries` (`Holiday` with `HolidayId` or custom id, type and
+  name), `has(id)`, `hasCustom(id)` and `ofType(type)`
+- Typed values: `MoonPhase`, `MyanmarYearType`, `SabbathType`,
+  `CalendarSystem`, `SasanaYearType`, with `phase`, `yearKind`, `sabbathType`,
+  `calendarSystem`, `sasanaYear` and `dartWeekday` getters
+- `MyanmarDateTime` implements `Comparable`
+- `CalendarConfig.validate()`, `CalendarConfig.language`,
+  `Language.tryFromCode`
+- `TranslationService.resetTranslations()` and `revision`
+- `MyanmarCalendar.getShanYearForDate`
+- A runnable quick start, `example/main.dart`
+
+### Performance
+
+- Year info is computed once per year, config namespaces once per config
+- Complete dates are cached per calendar day, so "now" hits the cache
+- Smaller cache keys; digits translated in one pass; default complete-date
+  cache of 400 days; `benchmark/month_grid_benchmark.dart`
+
+### Tooling
+
+- Day-by-day parity tests against `ceMmDateTime.js`: Myanmar dates both ways
+  for 17,530 days, holidays for 2010-2035, astrology for 2020-2030
+- CI tests on the Dart 3.8 floor and stable; publishing runs every check, a
+  tag/version check and a dry run first
+- `.pubignore` keeps the JS reference, tools and fixtures out of the package
+
 ## 2.0.2
 
 - Fix `getCompleteDate` and `westernToMyanmar` returning the next Myanmar day

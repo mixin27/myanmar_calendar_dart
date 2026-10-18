@@ -24,8 +24,21 @@ class ShanCalendarConstants {
   /// ```dart
   /// final shanYear = ShanCalendarConstants.getShanYear(1387); // Returns 2120
   /// ```
+  ///
+  /// This is the Shan year that begins at Shan New Year (Nadaw 1) of
+  /// [myanmarYear]. Use [getShanYearForDate] for a particular day: from
+  /// Tagu to Tasaungmon the Shan year is one less.
   static int getShanYear(int myanmarYear) {
     return myanmarYear + shanYearOffset;
+  }
+
+  /// The Shan year on day [myanmarMonth] of [myanmarYear]. Shan New Year is
+  /// Nadaw 1, so Nadaw onwards (including Late Tagu and Late Kason at the
+  /// end of the Myanmar year) is [getShanYear]; earlier months are the year
+  /// before.
+  static int getShanYearForDate(int myanmarYear, int myanmarMonth) {
+    final afterShanNewYear = myanmarMonth >= 9; // Nadaw = 9
+    return myanmarYear + shanYearOffset - (afterShanNewYear ? 0 : 1);
   }
 
   /// Calculate Myanmar year from Shan year

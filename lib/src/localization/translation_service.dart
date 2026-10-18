@@ -154,6 +154,7 @@ class TranslationService {
   ) {
     _translations[key] ??= {};
     _translations[key]![language] = translation;
+    _changed();
   }
 
   /// Remove a translation
@@ -163,7 +164,41 @@ class TranslationService {
     } else {
       _translations[key]?.remove(language);
     }
+    _changed();
   }
+
+  /// Restores the built-in translations, undoing [addTranslation] and
+  /// [removeTranslation].
+  static void resetTranslations() {
+    _translations
+      ..clear()
+      ..addAll(_createMutableTranslations());
+    _changed();
+  }
+
+  /// Bumped whenever translations change. Caches of translated results
+  /// include it in their keys, so changed names are never served stale.
+  static int get revision => _revision;
+  static var _revision = 0;
+
+  static void _changed() {
+    _revision++;
+    _digits.clear();
+  }
+
+  static final _digits = <Language, List<String>?>{};
+
+  /// The digits 0-9 in [language], or null when they are Western digits.
+  static List<String>? digitsFor(Language language) => _digits.putIfAbsent(
+    language,
+    () {
+      final digits = [for (var i = 0; i <= 9; i++) translateTo('$i', language)];
+      for (var i = 0; i <= 9; i++) {
+        if (digits[i] != '$i') return digits;
+      }
+      return null;
+    },
+  );
 
   /// Get all translation keys
   static List<String> get allKeys => _translations.keys.toList();
@@ -339,16 +374,8 @@ class TranslationService {
   }
 
   /// Whether numeric glyph translation is needed for [language].
-  static bool shouldTranslateDigits([Language? language]) {
-    language ??= _defaultLanguage;
-    for (var i = 0; i <= 9; i++) {
-      final digit = i.toString();
-      if (translateTo(digit, language) != digit) {
-        return true;
-      }
-    }
-    return false;
-  }
+  static bool shouldTranslateDigits([Language? language]) =>
+      digitsFor(language ?? _defaultLanguage) != null;
 
   static final Map<String, Map<Language, String>> _translations =
       _createMutableTranslations();

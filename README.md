@@ -7,9 +7,15 @@
 A pure Dart package for Myanmar calendar calculation, conversion, formatting,
 holiday rules, and astrological information.
 
+Results are checked day by day against the reference implementation,
+[`ceMmDateTime.js`](https://github.com/yan9a/mmcal): Myanmar dates, holidays
+and astrology.
+
+Requires Dart 3.8 or newer.
+
 ## Migration
 
-Upgrading from v1? See the migration guide:
+Upgrading from v2 or v1? See the migration guide:
 [MIGRATION.md](MIGRATION.md)
 
 ## Installation
@@ -37,9 +43,15 @@ void main() {
 }
 ```
 
-## Example App
+## Examples
 
-Run the built-in CLI demo app:
+A short tour (dates, a month grid, holidays, parsing):
+
+```sh
+dart run example/main.dart
+```
+
+The CLI demo app:
 
 ```sh
 dart run example/lib/main.dart
@@ -68,6 +80,7 @@ Options:
 
 - Myanmar <-> Western date conversion
 - Complete date object (Myanmar, Western, Shan, holidays, astro)
+- Typed values (`MoonPhase`, `MyanmarYearType`, `SabbathType`) and holiday IDs
 - Myanmar and Western date formatting with localization
 - Built-in holidays with flexible disabling rules
 - Custom holiday rules (typed matcher + date-rule helpers)
@@ -111,6 +124,10 @@ final utcDay = MyanmarCalendar.getCompleteDate(
   `toDateTime()` gives the wall-clock fields.
 
 ### Instance-first client (recommended for isolation)
+
+`MyanmarCalendarClient` has the whole API and never reads global state;
+`MyanmarCalendar` is a static convenience over a client for the global
+configuration. Without a `config`, a client uses the package defaults.
 
 ```dart
 final client = MyanmarCalendar.createClient(
@@ -162,8 +179,27 @@ final withNay = date.formatMyanmar('&d &Nay', Language.myanmar);
 final valid = MyanmarCalendar.isValidMyanmar(1385, 10, 1);
 final result = MyanmarCalendar.validateMyanmar(1385, 10, 1);
 
+// Throws DateParseException if the text isn't a date that exists.
 final parsedMyanmar = MyanmarCalendar.parseMyanmar('1385/10/1');
 final parsedWestern = MyanmarCalendar.parseWestern('2024-01-01');
+
+// Or get null instead.
+final maybe = MyanmarCalendar.tryParseMyanmar(userInput);
+```
+
+Myanmar dates are written year first (`1385/10/1`, `1385-10-1`) or day first
+(`1.10.1385`); Myanmar digits work too.
+
+### Typed values
+
+The int codes stay, with typed getters beside them:
+
+```dart
+final day = MyanmarCalendar.getCompleteDateFor(2026, 10, 26);
+if (day.phase == MoonPhase.fullMoon) print('Full moon');
+if (day.yearKind.isWatat) print('Watat year');
+if (day.astro.sabbathType == SabbathType.sabbath) print('Sabbath');
+print(day.myanmar.dartWeekday); // 1 = Monday, like DateTime.weekday
 ```
 
 ## Holiday Customization
@@ -198,7 +234,7 @@ final fullMoonFestival = CustomHoliday(
     Language.myanmar: 'လပြည့်ပွဲ',
   },
   matcher: (context) {
-    return context.myanmarDate.moonPhase == 1 && context.myanmarDate.day == 15;
+    return context.myanmarDate.phase == MoonPhase.fullMoon;
   },
 );
 ```
@@ -212,6 +248,19 @@ Removed legacy aliases:
 - `MyanmarCalendar.addCustomHolidays(...)`
 - `MyanmarCalendar.removeCustomHoliday(...)`
 - `MyanmarCalendar.clearCustomHolidays(...)`
+
+### Check for a holiday by ID
+
+Holiday names are translated, so compare IDs instead:
+
+```dart
+final info = MyanmarCalendar.getCompleteDateFor(2026, 4, 14).holidays;
+if (info.has(HolidayId.thingyanAkya)) print('Thingyan Akya');
+if (info.hasCustom('team_day')) print('Team day');
+for (final holiday in info.entries) {
+  print('${holiday.id ?? holiday.customId}: ${holiday.name}');
+}
+```
 
 ### Disable built-in holidays
 
@@ -260,8 +309,8 @@ MyanmarCalendar.configure(
 );
 ```
 
-For custom provider classes, override `cacheKey` with a stable value that
-changes when the provider's rule table changes:
+For a custom provider class, implement `matches` and a `cacheKey` that
+changes whenever its rules change (results are cached by it):
 
 ```dart
 class MyHolidayProvider extends WesternHolidayProvider {
@@ -417,10 +466,8 @@ MyanmarCalendar.clearCache();
 MyanmarCalendar.resetCacheStatistics();
 
 final stats = MyanmarCalendar.getCacheStatistics();
-print(stats);
-
-final typedStats = MyanmarCalendar.getTypedCacheStatistics();
-print(typedStats.hitRate);
+print(stats.hitRate);
+print(stats.toMap());
 ```
 
 ### Notes
@@ -429,6 +476,8 @@ print(typedStats.hitRate);
 - Holiday and complete-date cache entries are language-aware.
 - Custom holiday cache keys are based on stable `cacheKey/cacheVersion` values.
 - Western holiday provider cache keys use `westernHolidayProvider.cacheKey`.
+- Complete dates are cached per calendar day, so repeated calls with
+  `DateTime.now()` reuse one entry.
 - If your workload is mostly one-off conversions, disabling cache is reasonable.
 
 ## Localization
@@ -458,6 +507,24 @@ final en = MyanmarCalendar.getCompleteDate(
 `setLanguage` updates the default language. For per-request localization, pass
 `language:` directly to APIs that support it.
 
+`TranslationService.addTranslation` changes a word everywhere, including
+results already cached; `TranslationService.resetTranslations()` restores the
+built-in words.
+
+## AI Prompts
+
+Prompts for AI assistants live in their own library:
+
+```dart
+import 'package:myanmar_calendar_dart/ai.dart';
+
+final prompt = AIPromptService.generatePrompt(
+  MyanmarCalendar.getCompleteDateFor(2026, 10, 18),
+  language: Language.myanmar,
+  type: AIPromptType.horoscope,
+);
+```
+
 ## Chronicle APIs
 
 ```dart
@@ -468,13 +535,24 @@ final dynasty = MyanmarCalendar.getDynastyById('konbaung');
 
 ## Error Handling
 
+Invalid input throws a `MyanmarCalendarException`:
+
+- `InvalidMyanmarDateException`: a Myanmar date that doesn't exist (such as
+  day 30 of a 29-day month, or First Waso in a common year)
+- `InvalidWesternDateException`: a Western date or time that doesn't exist
+- `DateParseException`: text that isn't a date (also a `FormatException`)
+- `InvalidConfigurationException`: a config value out of range
+
 ```dart
 try {
-  MyanmarCalendar.fromWestern(2024, 2, 30); // invalid date
-} on ArgumentError catch (e) {
-  print(e);
+  MyanmarCalendar.fromWestern(2024, 2, 30);
+} on InvalidWesternDateException catch (e) {
+  print(e.message);
 }
 ```
+
+Mistakes in calling code, such as a reversed date range, are reported with
+`ArgumentError`.
 
 ## Development
 
@@ -494,7 +572,17 @@ Regenerate fixtures when algorithm behavior changes:
 
 ```sh
 node tool/generate_reference_parity_fixtures.mjs
-dart test test/parity_reference_test.dart
+node tool/generate_calendar_sweep_fixtures.mjs
+dart test test/parity_reference_test.dart test/calendar_sweep_parity_test.dart
+```
+
+The sweep checks every day of several ranges: Myanmar dates both ways,
+holidays for 2010-2035 and astrology for 2020-2030.
+
+### Benchmark
+
+```sh
+dart run benchmark/month_grid_benchmark.dart
 ```
 
 ## Acknowledgements

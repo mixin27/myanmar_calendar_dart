@@ -15,7 +15,7 @@ typedef CompleteDateResolver = CompleteDate Function(DateTime dateTime);
 class CacheConfig {
   /// Create a new [CacheConfig] instance
   const CacheConfig({
-    this.maxCompleteDateCacheSize = 100,
+    this.maxCompleteDateCacheSize = 400,
     this.maxMyanmarDateCacheSize = 200,
     this.maxShanDateCacheSize = 200,
     this.maxWesternDateCacheSize = 200,
@@ -90,13 +90,16 @@ class CacheConfig {
 
 /// Cache entry with timestamp for TTL support
 class _CacheEntry<T> {
-  _CacheEntry(this.value) : timestamp = DateTime.now();
+  _CacheEntry(this.value) : _createdMs = _clock.elapsedMilliseconds;
   final T value;
-  final DateTime timestamp;
+  final int _createdMs;
+
+  /// Monotonic and cheaper than reading the wall clock on every write.
+  static final _clock = Stopwatch()..start();
 
   bool isExpired(int ttl) {
     if (ttl == 0) return false;
-    return DateTime.now().difference(timestamp).inSeconds > ttl;
+    return _clock.elapsedMilliseconds - _createdMs > ttl * 1000;
   }
 }
 
@@ -618,9 +621,8 @@ class CalendarCache {
     final dateKey = _namespaceKey(
       dateTime.isUtc
           ? 'u${dateTime.microsecondsSinceEpoch}'
-          : 'l${dateTime.year}-${dateTime.month}-${dateTime.day}'
-                'T${dateTime.hour}:${dateTime.minute}:${dateTime.second}'
-                '.${dateTime.millisecond}${dateTime.microsecond}',
+          // The wall-clock fields as one number: unambiguous and cheap.
+          : 'l${DateTime.utc(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.millisecond, dateTime.microsecond).microsecondsSinceEpoch}',
       namespace,
     );
     if (customHolidays == null || customHolidays.isEmpty) return dateKey;
@@ -699,8 +701,8 @@ class CalendarCache {
     return _hits / total;
   }
 
-  /// Get typed cache statistics snapshot.
-  CalendarCacheStatistics getTypedStatistics() {
+  /// A snapshot of the cache's statistics (`toMap()` gives a map).
+  CalendarCacheStatistics getStatistics() {
     return CalendarCacheStatistics(
       enabled: _config.enableCaching,
       hits: _hits,
@@ -712,11 +714,6 @@ class CalendarCache {
       astroInfo: _astroInfoCache.getStats(),
       holidayInfo: _holidayInfoCache.getStats(),
     );
-  }
-
-  /// Legacy map-based statistics for backward compatibility.
-  Map<String, dynamic> getStatistics() {
-    return getTypedStatistics().toMap();
   }
 
   /// Reset statistics

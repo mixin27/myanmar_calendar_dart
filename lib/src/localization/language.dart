@@ -23,7 +23,16 @@ enum Language {
   /// code
   final String code;
 
-  /// Get language from code
+  /// The language for [code], or null if it isn't one.
+  static Language? tryFromCode(String code) {
+    for (final language in values) {
+      if (language.code == code) return language;
+    }
+    return null;
+  }
+
+  /// The language for [code], or English if it isn't one. Use [tryFromCode]
+  /// to tell an unknown code apart.
   static Language fromCode(String code) {
     return Language.values.firstWhere(
       (lang) => lang.code == code,

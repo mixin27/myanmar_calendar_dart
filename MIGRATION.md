@@ -1,3 +1,123 @@
+# Migration Guide (v2 -> v3)
+
+v3 fixes calendar results that were wrong in v2 and tightens the API. Most
+apps need only a few mechanical changes.
+
+## Quick Checklist
+
+- Update the dependency to `^3.0.0` (Dart 3.8 or newer)
+- Catch `MyanmarCalendarException` (or a subclass) instead of `ArgumentError`
+- Switch `parseMyanmar`/`parseWestern` calls that expect null to
+  `tryParseMyanmar`/`tryParseWestern`
+- Import `package:myanmar_calendar_dart/ai.dart` for AI prompts
+- Use `getCacheStatistics()` (now typed) instead of `getTypedCacheStatistics()`
+- Give custom `WesternHolidayProvider`s a `cacheKey`
+- Remove `hide CacheException` from imports of this package
+
+---
+
+## 1) Errors
+
+Invalid input throws typed exceptions, all subclasses of
+`MyanmarCalendarException` (an `Exception`):
+
+| Situation | v2 | v3 |
+| --- | --- | --- |
+| Myanmar date doesn't exist | `ArgumentError`, or silently moved to a neighbouring day | `InvalidMyanmarDateException` |
+| Western date doesn't exist | `ArgumentError` | `InvalidWesternDateException` |
+| Unparseable string | `null` | `DateParseException` (also a `FormatException`) |
+| Bad config value | release builds: wrong results | `InvalidConfigurationException` |
+
+```dart
+// v2
+try {
+  MyanmarCalendar.fromMyanmar(year, month, day);
+} on ArgumentError catch (e) { ... }
+
+// v3
+try {
+  MyanmarCalendar.fromMyanmar(year, month, day);
+} on InvalidMyanmarDateException catch (e) {
+  print(e.message);
+}
+```
+
+Day 30 of a 29-day month and First Waso (month 0) in a common year used to
+become day 29 or Waso. They are now rejected; `validateMyanmar` explains why.
+
+Removed exception classes (they were never thrown): `CacheException`,
+`DateConversionException`, `DateOutOfRangeException`,
+`AstrologicalCalculationException`, `HolidayCalculationException`.
+
+## 2) Parsing
+
+```dart
+// v2: null on failure
+final date = MyanmarCalendar.parseMyanmar(text);
+
+// v3
+final date = MyanmarCalendar.tryParseMyanmar(text); // null on failure
+final strict = MyanmarCalendar.parseMyanmar(text);  // throws DateParseException
+```
+
+Myanmar strings must be a whole date, year first (`1385/10/1`) or day first
+(`1.10.1385`), with one separator. Strings like `abc1385/10/1` no longer
+parse. Myanmar digits are accepted.
+
+## 3) Renamed or moved
+
+| v2 | v3 |
+| --- | --- |
+| `getTypedCacheStatistics()` | `getCacheStatistics()` |
+| `getCacheStatistics()` (map) | `getCacheStatistics().toMap()` |
+| `CalendarCache.getTypedStatistics()` | `CalendarCache.getStatistics()` |
+| `MyanmarCalendar.generateAIPrompt(date, ...)` | `AIPromptService.generatePrompt(date, ...)` from `package:myanmar_calendar_dart/ai.dart` |
+| `convertMyanmarDates([{'year': y, 'month': m, 'day': d}])` | `convertMyanmarDates([(y, m, d)])` |
+| `copyWith(millisecond: ..., isUtc: ...)` | removed (they were ignored) |
+| `fromMillisecondsSinceEpoch(ms, isUtc: ...)` | `fromMillisecondsSinceEpoch(ms)` (always an instant) |
+
+## 4) Custom Western holiday providers
+
+`WesternHolidayProvider` is abstract. Implement both members:
+
+```dart
+class MyProvider extends WesternHolidayProvider {
+  const MyProvider();
+
+  @override
+  String get cacheKey => 'my_provider:v1'; // change it when the rules change
+
+  @override
+  bool matches(HolidayId id, int year, int month, int day) => false;
+}
+```
+
+## 5) Behaviour you may notice
+
+- **Holidays match the reference calendar.** Tazaungmon 14 is a public
+  holiday. The Thadingyut full moon is only "End of Buddhist Lent". 1 January
+  is a public holiday only 2018–2021. The December 2017–2021 and 2019–2021
+  substitute holidays appear.
+- **Shan year** changes at Shan New Year (Nadaw 1), not at Thingyan.
+- **`MyanmarDate.julianDayNumber`** is the whole local day number (local
+  noon).
+- **`createClient()` without a config** uses the package defaults, like the
+  `MyanmarCalendarClient` constructor.
+- **Helpers that take a date** (`addDays`, `addMonths`, `findNextMoonPhase`)
+  keep that date's configuration.
+- **`isWatatYear`, `getYearType`, `getMyanmarMonth`, `addMonths`** and moon
+  phase searches return correct results; v2 could be off by a year, a month
+  or a day.
+
+## 6) New, optional
+
+- `HolidayInfo.entries` and `has(HolidayId)` to test holidays without
+  matching translated names
+- `phase`, `yearKind`, `sabbathType` and `dartWeekday` typed getters
+- `config:` on most `MyanmarCalendar` methods for one-off settings
+
+---
+
 # Migration Guide (v1 -> v2)
 
 This guide helps you migrate from `myanmar_calendar_dart` v1.x to v2.x.

@@ -23,21 +23,41 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The lowest SDK the pubspec allows, and the latest.
+        sdk: ['3.8.0', stable]
     steps:
       - name: 📚 Git Checkout
         uses: actions/checkout@v4
 
       - name: 🎯 Setup Dart
         uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
 
       - name: 📦 Install Dependencies
-        run: dart pub get
+        run: |
+          # very_good_analysis needs a newer SDK than the package itself;
+          # the oldest SDK only compiles and tests.
+          if [ "${{ matrix.sdk }}" != "stable" ]; then
+            dart pub remove very_good_analysis
+          fi
+          dart pub get
 
       - name: 📝 Verify Formatting
+        # Formatter output can differ between SDKs; check it on stable.
+        if: matrix.sdk == 'stable'
         run: dart format --output=none --set-exit-if-changed .
 
       - name: 📊 Analyze Project Source
-        run: dart analyze
+        if: matrix.sdk == 'stable'
+        run: dart analyze --fatal-infos
 
       - name: 🧪 Run Tests
         run: dart test
+
+      - name: 📦 Publish dry run
+        if: matrix.sdk == 'stable'
+        run: dart pub publish --dry-run

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
@@ -37,20 +38,21 @@ class CalendarUtils {
   /// ```
   static List<MyanmarDate> generateMyanmarDateRange(
     MyanmarDate startDate,
-    MyanmarDate endDate,
-  ) {
+    MyanmarDate endDate, {
+    MyanmarCalendarService? service,
+  }) {
     if (startDate.julianDayNumber > endDate.julianDayNumber) {
       throw ArgumentError('Start date must be before or equal to end date');
     }
 
     final dates = <MyanmarDate>[];
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
 
     var currentJdn = startDate.julianDayNumber;
     final endJdn = endDate.julianDayNumber;
 
     while (currentJdn <= endJdn) {
-      dates.add(service.julianToMyanmar(currentJdn));
+      dates.add(service.myanmarForLocalDay(currentJdn));
       currentJdn += 1.0;
     }
 
@@ -84,8 +86,12 @@ class CalendarUtils {
   /// Generates dates for a specific Myanmar month
   ///
   /// Returns all dates within the specified Myanmar month and year.
-  static List<MyanmarDate> generateMyanmarMonth(int year, int month) {
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> generateMyanmarMonth(
+    int year,
+    int month, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     return service.getMyanmarMonth(year, month);
   }
 
@@ -127,10 +133,14 @@ class CalendarUtils {
   ///
   /// Returns a new Myanmar date that is [days] days after the input date.
   /// Use negative values to subtract days.
-  static MyanmarDate addDaysToMyanmarDate(MyanmarDate date, int days) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate addDaysToMyanmarDate(
+    MyanmarDate date,
+    int days, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final newJdn = date.julianDayNumber + days;
-    return service.julianToMyanmar(newJdn);
+    return service.myanmarForLocalDay(newJdn);
   }
 
   /// Adds months to a Myanmar date using deterministic month boundaries.
@@ -138,10 +148,14 @@ class CalendarUtils {
   /// Month progression is computed from real Myanmar month transitions rather
   /// than arithmetic approximation, so edge cases around intercalary months
   /// and variable month lengths remain consistent.
-  static MyanmarDate addMonthsToMyanmarDate(MyanmarDate date, int months) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate addMonthsToMyanmarDate(
+    MyanmarDate date,
+    int months, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     if (months == 0) {
-      return service.julianToMyanmar(date.julianDayNumber);
+      return service.myanmarForLocalDay(date.julianDayNumber);
     }
 
     final originalDay = date.day;
@@ -165,21 +179,27 @@ class CalendarUtils {
       }
     }
 
-    final targetMonthLength = _monthLengthByTransition(
+    // Pick the same day number in the target month, or its last day. A
+    // month split by New Year doesn't start at day 1, so counting from the
+    // month's first day would shift the day.
+    final nextMonthStartJdn = _findNextMonthStartJdn(
       service,
       targetMonthStartJdn,
     );
-    final targetDay = math.min(originalDay, targetMonthLength);
-    final targetJdn = targetMonthStartJdn + (targetDay - 1);
-    return service.julianToMyanmar(targetJdn);
+    var result = service.myanmarForLocalDay(targetMonthStartJdn);
+    for (var jdn = targetMonthStartJdn; jdn < nextMonthStartJdn; jdn++) {
+      result = service.myanmarForLocalDay(jdn);
+      if (result.day >= originalDay) break;
+    }
+    return result;
   }
 
   static double _findMonthStartJdn(MyanmarCalendarService service, double jdn) {
-    final current = service.julianToMyanmar(jdn);
+    final current = service.myanmarForLocalDay(jdn);
     var cursor = current.julianDayNumber;
 
     while (true) {
-      final previousDay = service.julianToMyanmar(cursor - 1);
+      final previousDay = service.myanmarForLocalDay(cursor - 1);
       if (previousDay.year != current.year ||
           previousDay.month != current.month) {
         return cursor;
@@ -192,11 +212,11 @@ class CalendarUtils {
     MyanmarCalendarService service,
     double monthStartJdn,
   ) {
-    final monthStart = service.julianToMyanmar(monthStartJdn);
+    final monthStart = service.myanmarForLocalDay(monthStartJdn);
     var cursor = monthStartJdn + 1;
 
     while (true) {
-      final candidate = service.julianToMyanmar(cursor);
+      final candidate = service.myanmarForLocalDay(cursor);
       if (candidate.year != monthStart.year ||
           candidate.month != monthStart.month) {
         return candidate.julianDayNumber;
@@ -209,18 +229,10 @@ class CalendarUtils {
     MyanmarCalendarService service,
     double currentMonthStartJdn,
   ) {
-    final previousMonthAnyDay = service.julianToMyanmar(
+    final previousMonthAnyDay = service.myanmarForLocalDay(
       currentMonthStartJdn - 1,
     );
     return _findMonthStartJdn(service, previousMonthAnyDay.julianDayNumber);
-  }
-
-  static int _monthLengthByTransition(
-    MyanmarCalendarService service,
-    double monthStartJdn,
-  ) {
-    final nextMonthStartJdn = _findNextMonthStartJdn(service, monthStartJdn);
-    return (nextMonthStartJdn - monthStartJdn).round();
   }
 
   /// Gets the number of days in a Myanmar month
@@ -276,15 +288,19 @@ class CalendarUtils {
   ///
   /// Returns the next Myanmar date that has the specified moon phase,
   /// starting from the given date (exclusive).
-  static MyanmarDate findNextMoonPhase(MyanmarDate startDate, int moonPhase) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate findNextMoonPhase(
+    MyanmarDate startDate,
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     var currentJdn = startDate.julianDayNumber + 1;
 
     // Limit search to avoid infinite loops
     const maxDays = 45; // More than a lunar month
 
     for (var i = 0; i < maxDays; i++) {
-      final currentDate = service.julianToMyanmar(currentJdn);
+      final currentDate = service.myanmarForLocalDay(currentJdn);
       if (currentDate.moonPhase == moonPhase) {
         return currentDate;
       }
@@ -300,16 +316,17 @@ class CalendarUtils {
   /// starting from the given date (exclusive).
   static MyanmarDate findPreviousMoonPhase(
     MyanmarDate startDate,
-    int moonPhase,
-  ) {
-    final service = MyanmarCalendarService();
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     var currentJdn = startDate.julianDayNumber - 1;
 
     // Limit search to avoid infinite loops
     const maxDays = 45; // More than a lunar month
 
     for (var i = 0; i < maxDays; i++) {
-      final currentDate = service.julianToMyanmar(currentJdn);
+      final currentDate = service.myanmarForLocalDay(currentJdn);
       if (currentDate.moonPhase == moonPhase) {
         return currentDate;
       }
@@ -324,13 +341,20 @@ class CalendarUtils {
   /// Finds all dates with specific moon phase in a year
   ///
   /// Returns all Myanmar dates in the specified year that have the given moon phase.
-  static List<MyanmarDate> findMoonPhaseDatesInYear(int year, int moonPhase) {
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> findMoonPhaseDatesInYear(
+    int year,
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final dates = <MyanmarDate>[];
 
     // Start from the beginning of the year
+    // From 1 Tagu (just before New Year) past the next 1 Tagu, so the
+    // year's Late Tagu and Late Kason are included; the year filter keeps
+    // only days of [year].
     final startJdn = service.myanmarToJulian(year, 1, 1);
-    final endJdn = service.myanmarToJulian(year + 1, 1, 1);
+    final endJdn = service.myanmarToJulian(year + 1, 1, 1) + 60;
 
     var currentJdn = startJdn;
     while (currentJdn < endJdn) {
@@ -347,12 +371,16 @@ class CalendarUtils {
   /// Finds all sabbath days in a Myanmar month
   ///
   /// Returns all dates in the specified month that are sabbath days.
-  static List<MyanmarDate> findSabbathDaysInMonth(int year, int month) {
-    final monthDates = generateMyanmarMonth(year, month);
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> findSabbathDaysInMonth(
+    int year,
+    int month, {
+    MyanmarCalendarService? service,
+  }) {
+    final calendar = service ?? MyanmarCalendarService();
+    final monthDates = generateMyanmarMonth(year, month, service: calendar);
 
     return monthDates.where((date) {
-      final astro = service.getAstroInfo(date);
+      final astro = calendar.getAstroInfo(date);
       return astro.sabbath == 'Sabbath';
     }).toList();
   }
@@ -412,55 +440,57 @@ class CalendarUtils {
   // DATE PARSING AND FORMATTING UTILITIES
   // ============================================================================
 
-  /// Parses a Myanmar date string in various formats
+  /// Parses a Myanmar date written year first (`1385/10/1`, `1385-10-1`,
+  /// `1385.10.1`) or day first (`1/10/1385`, `1.10.1385`). Myanmar digits
+  /// (`၁၃၈၅/၁၀/၁`) work too. The whole string must match, and the date must
+  /// exist.
   ///
-  /// Attempts to parse common Myanmar date string formats.
-  /// Supported formats: "year/month/day", "year-month-day", "day.month.year"
-  static MyanmarDate? parseMyanmarDateString(String dateString) {
-    // Remove whitespace and normalize separators
-    final normalized = dateString.trim().replaceAll(RegExp(r'[^\d/\-\.]'), '');
-
-    final patterns = [
-      RegExp(r'^(\d{1,4})[/\-\.](\d{1,2})[/\-\.](\d{1,2})'), // year/month/day
-      RegExp(r'^(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{1,4})'), // day/month/year
-    ];
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(normalized);
-      if (match != null) {
-        try {
-          final first = int.parse(match.group(1)!);
-          final second = int.parse(match.group(2)!);
-          final third = int.parse(match.group(3)!);
-
-          // Determine which format based on magnitude
-          if (first > 31 || third <= 31) {
-            // Likely year/month/day format
-            return _createMyanmarDateSafe(first, second, third);
-          } else {
-            // Likely day/month/year format
-            return _createMyanmarDateSafe(third, second, first);
-          }
-        } on Exception catch (_) {
-          continue; // Try next pattern
-        }
-      }
+  /// Throws [DateParseException] otherwise.
+  static MyanmarDate parseMyanmarDate(
+    String dateString, {
+    MyanmarCalendarService? service,
+  }) {
+    final western = dateString.trim().replaceAllMapped(
+      RegExp('[၀-၉]'),
+      (m) => '${m[0]!.codeUnitAt(0) - 0x1040}',
+    );
+    final yearFirst = RegExp(
+      r'^(\d{3,4})([/.\-])(\d{1,2})\2(\d{1,2})$',
+    ).firstMatch(western);
+    final dayFirst = RegExp(
+      r'^(\d{1,2})([/.\-])(\d{1,2})\2(\d{3,4})$',
+    ).firstMatch(western);
+    final (year, month, day) = switch ((yearFirst, dayFirst)) {
+      (final m?, _) => (int.parse(m[1]!), int.parse(m[3]!), int.parse(m[4]!)),
+      (_, final m?) => (int.parse(m[4]!), int.parse(m[3]!), int.parse(m[1]!)),
+      _ => throw DateParseException(
+        dateString: dateString,
+        expectedFormat: 'year/month/day or day/month/year',
+      ),
+    };
+    service ??= MyanmarCalendarService();
+    final validation = service.validateMyanmarDate(year, month, day);
+    if (!validation.isValid) {
+      throw DateParseException(
+        dateString: dateString,
+        customMessage:
+            '"$dateString" is not a Myanmar date: '
+            '${validation.error}',
+      );
     }
-
-    return null; // Could not parse
+    return service.julianToMyanmar(service.myanmarToJulian(year, month, day));
   }
 
-  /// Helper method to safely create Myanmar date
-  static MyanmarDate? _createMyanmarDateSafe(int year, int month, int day) {
-    final service = MyanmarCalendarService();
-    final validation = service.validateMyanmarDate(year, month, day);
-
-    if (validation.isValid) {
-      final jdn = service.myanmarToJulian(year, month, day);
-      return service.julianToMyanmar(jdn);
+  /// Like [parseMyanmarDate], but returns null instead of throwing.
+  static MyanmarDate? tryParseMyanmarDate(
+    String dateString, {
+    MyanmarCalendarService? service,
+  }) {
+    try {
+      return parseMyanmarDate(dateString, service: service);
+    } on DateParseException {
+      return null;
     }
-
-    return null;
   }
 
   /// Formats a Myanmar date as a simple string
@@ -486,9 +516,10 @@ class CalendarUtils {
   /// Efficiently converts a list of Western dates to Myanmar dates.
   /// Processing is done in batches to optimize performance.
   static List<MyanmarDate> convertWesternDatesToMyanmar(
-    List<DateTime> westernDates,
-  ) {
-    final service = MyanmarCalendarService();
+    List<DateTime> westernDates, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <MyanmarDate>[];
 
     // Process in batches to avoid memory issues with large lists
@@ -510,9 +541,10 @@ class CalendarUtils {
   ///
   /// Efficiently converts a list of Myanmar dates to Western dates.
   static List<DateTime> convertMyanmarDatesToWestern(
-    List<MyanmarDate> myanmarDates,
-  ) {
-    final service = MyanmarCalendarService();
+    List<MyanmarDate> myanmarDates, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <DateTime>[];
 
     const batchSize = PackageConstants.maxBatchSize;
@@ -541,8 +573,9 @@ class CalendarUtils {
   static List<CompleteDate> getCompleteDatesForWesternDates(
     List<DateTime> dates, {
     Language? language,
+    MyanmarCalendarService? service,
   }) {
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
     final results = <CompleteDate>[];
 
     const batchSize = PackageConstants.maxBatchSize;
@@ -567,8 +600,9 @@ class CalendarUtils {
   ///
   /// Returns various statistics about the date range including span, average, etc.
   static Map<String, dynamic> calculateMyanmarDateStatistics(
-    List<MyanmarDate> dates,
-  ) {
+    List<MyanmarDate> dates, {
+    MyanmarCalendarService? service,
+  }) {
     if (dates.isEmpty) {
       return {'count': 0};
     }
@@ -586,17 +620,17 @@ class CalendarUtils {
         ? (jdns[middle - 1] + jdns[middle]) / 2
         : jdns[middle];
 
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
 
     return {
       'count': dates.length,
       'span_days': span,
-      'earliest': service.julianToMyanmar(min),
-      'latest': service.julianToMyanmar(max),
+      'earliest': service.myanmarForLocalDay(min),
+      'latest': service.myanmarForLocalDay(max),
       'average_jdn': average,
       'median_jdn': median,
-      'average_date': service.julianToMyanmar(average),
-      'median_date': service.julianToMyanmar(median),
+      'average_date': service.myanmarForLocalDay(average),
+      'median_date': service.myanmarForLocalDay(median),
     };
   }
 
@@ -653,9 +687,10 @@ class CalendarUtils {
   ///
   /// Returns validation results for each date in the list.
   static List<ValidationResult> validateMyanmarDates(
-    List<Map<String, int>> dateMaps,
-  ) {
-    final service = MyanmarCalendarService();
+    List<Map<String, int>> dateMaps, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <ValidationResult>[];
 
     for (final dateMap in dateMaps) {

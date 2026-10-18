@@ -71,11 +71,11 @@ void main() {
     test('invalid Western calendar date is rejected', () {
       expect(
         () => MyanmarCalendar.fromWestern(2024, 2, 30),
-        throwsArgumentError,
+        throwsA(isA<InvalidWesternDateException>()),
       );
       expect(
         () => MyanmarCalendar.fromWestern(2025, 11, 31),
-        throwsArgumentError,
+        throwsA(isA<InvalidWesternDateException>()),
       );
     });
 
@@ -102,7 +102,7 @@ void main() {
 
     test('typed cache statistics are available', () {
       final cache = CalendarCache.independent();
-      final stats = cache.getTypedStatistics();
+      final stats = cache.getStatistics();
 
       expect(stats.enabled, isTrue);
       expect(stats.completeDate.maxSize, greaterThanOrEqualTo(0));
