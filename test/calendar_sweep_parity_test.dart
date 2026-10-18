@@ -106,6 +106,44 @@ void main() {
     }
     expect(mismatches, isEmpty);
   });
+
+  test('astrology matches the reference, 2020-2030', () {
+    final astro = fixture['astro'] as Map<String, dynamic>;
+    final start = astro['startJdn'] as int;
+    final days = (astro['days'] as List<dynamic>).cast<String>();
+    const sabbath = ['', 'Sabbath', 'Sabbath Eve'];
+    const pyathada = ['', 'Pyathada', 'Afternoon Pyathada'];
+    const nagahle = ['West', 'North', 'East', 'South'];
+    const mahabote = [
+      'Binga',
+      'Atun',
+      'Yaza',
+      'Adipati',
+      'Marana',
+      'Thike',
+      'Puti',
+    ];
+    const nakhat = ['Ogre', 'Elf', 'Human'];
+    final client = MyanmarCalendarClient();
+    for (var i = 0; i < days.length; i++) {
+      final [codes, named] = days[i].split('|');
+      final c = codes.split(' ').map(int.parse).toList();
+      final date = converter.myanmarForLocalDay((start + i).toDouble());
+      final info = client.getAstroInfo(date);
+      final reason = 'local day ${start + i}';
+      expect(info.sabbath, sabbath[c[0]], reason: reason);
+      expect(info.yatyaza, c[1] == 1 ? 'Yatyaza' : '', reason: reason);
+      expect(info.pyathada, pyathada[c[2]], reason: reason);
+      expect(info.nagahle, nagahle[c[3]], reason: reason);
+      expect(info.mahabote, mahabote[c[4]], reason: reason);
+      expect(info.nakhat, nakhat[c[5]], reason: reason);
+      expect(
+        info.astrologicalDays,
+        named.isEmpty ? <String>[] : named.split(','),
+        reason: reason,
+      );
+    }
+  });
 }
 
 /// The package's English names are shorter than the reference's.

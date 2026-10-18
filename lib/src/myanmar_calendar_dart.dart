@@ -894,9 +894,10 @@ class MyanmarCalendar {
   // SHAN CALENDAR SUPPORT
   // ============================================================================
 
-  /// Get Shan calendar year from Myanmar year
+  /// The Shan year that begins at Shan New Year (Nadaw 1) of [myanmarYear]
   ///
-  /// Formula: Shan Year = Myanmar Year + 733
+  /// Formula: Shan Year = Myanmar Year + 733. For a particular day, use
+  /// [getShanYearForDate].
   ///
   /// Example:
   /// ```dart
@@ -904,6 +905,13 @@ class MyanmarCalendar {
   /// ```
   static int getShanYear(int myanmarYear) {
     return ShanCalendarConstants.getShanYear(myanmarYear);
+  }
+
+  /// The Shan year on a day of Myanmar [month] in [myanmarYear]: Shan New
+  /// Year is Nadaw 1, so it is [getShanYear] from Nadaw on and one less
+  /// before.
+  static int getShanYearForDate(int myanmarYear, int month) {
+    return ShanCalendarConstants.getShanYearForDate(myanmarYear, month);
   }
 
   /// Get Myanmar year from Shan year

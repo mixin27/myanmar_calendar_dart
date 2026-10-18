@@ -11,6 +11,8 @@
 //   years with entries in the fme/wte exception tables.
 // - holidays: for 2010-2035, the days where cal_holiday (public holidays)
 //   or cal_holiday2 (anniversary days) is non-empty, with their names.
+// - astro: for 2020-2030, each day as "sabbath yatyaza pyathada nagahle
+//   mahabote nakhat|astrological days" (the cal_* codes and cal_astro).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -71,6 +73,22 @@ for (let jdn = jdnOf(2010, 1, 1); jdn <= jdnOf(2035, 12, 31); jdn += 1) {
   }
 }
 
+const astroStart = jdnOf(2020, 1, 1);
+const astroDays = [];
+for (let jdn = astroStart; jdn <= jdnOf(2030, 12, 31); jdn += 1) {
+  const m = ceMmDateTime.j2m(jdn);
+  const wd = (jdn + 2) % 7;
+  const codes = [
+    ceMmDateTime.cal_sabbath(m.md, m.mm, m.myt),
+    ceMmDateTime.cal_yatyaza(m.mm, wd),
+    ceMmDateTime.cal_pyathada(m.mm, wd),
+    ceMmDateTime.cal_nagahle(m.mm),
+    ceMmDateTime.cal_mahabote(m.my, wd),
+    ceMmDateTime.cal_nakhat(m.my),
+  ];
+  astroDays.push(`${codes.join(' ')}|${ceMmDateTime.cal_astro(jdn).join(',')}`);
+}
+
 fs.writeFileSync(
   outputPath,
   JSON.stringify({
@@ -78,6 +96,7 @@ fs.writeFileSync(
     timezoneOffset: 6.5,
     myanmar,
     holidays,
+    astro: { startJdn: astroStart, days: astroDays },
   }),
 );
 console.log(

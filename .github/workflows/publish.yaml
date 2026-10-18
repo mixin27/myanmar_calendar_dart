@@ -6,9 +6,41 @@ on:
       - 'v*.*.*'
 
 jobs:
+  # Nothing is published unless the tagged commit passes every check.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+
+      - name: 📦 Install Dependencies
+        run: dart pub get
+
+      - name: 📝 Verify Formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: 📊 Analyze Project Source
+        run: dart analyze --fatal-infos
+
+      - name: 🧪 Run Tests
+        run: dart test
+
+      - name: 🔖 Check the tag matches the pubspec version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          [ "v$version" = "${GITHUB_REF_NAME}" ] || {
+            echo "Tag ${GITHUB_REF_NAME} does not match pubspec version $version"
+            exit 1
+          }
+
+      - name: 📦 Publish dry run
+        run: dart pub publish --dry-run
+
   publish:
+    needs: verify
     permissions:
       id-token: write # Required for authentication using OIDC
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
-    # with:
-    #   working-directory: path/to/package/within/repository
