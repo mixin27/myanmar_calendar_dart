@@ -156,6 +156,15 @@ class MyanmarCalendarClient {
     return _service.getCompleteDate(dateTime, language: language);
   }
 
+  /// Complete information for the calendar day [year]-[month]-[day], with
+  /// no time of day or time zone involved.
+  CompleteDate getCompleteDateFor(
+    int year,
+    int month,
+    int day, {
+    Language? language,
+  }) => _service.getCompleteDateFor(year, month, day, language: language);
+
   /// Returns complete information for each date in [dates].
   List<CompleteDate> getCompleteDates(
     List<DateTime> dates, {

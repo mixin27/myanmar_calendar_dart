@@ -1,3 +1,28 @@
+## 2.0.2
+
+- Fix `getCompleteDate` and `westernToMyanmar` returning the next Myanmar day
+  for times from 17:30 onwards (the offset was applied twice)
+- Fix `MyanmarDateTime.now()` running 6½ hours behind (UTC fields were read as
+  Myanmar Time), which gave the previous day before 06:30
+- Treat UTC `DateTime`s, epoch values and `fromTimestamp` as instants, and make
+  `toUtc()`, `millisecondsSinceEpoch` and `microsecondsSinceEpoch` return the
+  real instant whatever the device's time zone
+- Fix Julian-day-to-time conversion giving `hh:59:60`-style times; values are
+  snapped to the nearest second first
+- Fix the complete-date cache confusing a UTC value with a local value at the
+  same instant
+- Guard exact local midnight against floating-point rounding into the previous
+  Myanmar day
+- Add `getCompleteDateFor(year, month, day)` on `MyanmarCalendar`, the client
+  and the service, for time-zone-free calendar-day lookups
+- Add an optional `config` to `MyanmarCalendar.getCompleteDate`,
+  `getCompleteDateFor`, `getCompleteDates`, `getHolidayInfo`,
+  `getMyanmarMonth`, `getWesternDatesForMyanmarMonth` and `findAuspiciousDays`
+  to use another time zone or holiday set for one call without changing the
+  global configuration
+- Deprecate the `isUtc` flag of `fromMillisecondsSinceEpoch`; epoch values are
+  always instants
+
 ## 2.0.1
 
 - Fix translation data for special months such as `Late Tagu`, `Late Kason` and `First Waso`

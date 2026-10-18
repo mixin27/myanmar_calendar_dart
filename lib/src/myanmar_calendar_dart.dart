@@ -108,6 +108,7 @@ class MyanmarCalendar {
 
     // Reset service to pick up new configuration
     _service = null;
+    _configServices.clear();
     _chronicles = null;
     MyanmarDateTime.clearSharedInstances();
 
@@ -123,6 +124,7 @@ class MyanmarCalendar {
       customHolidayRules: [...CalendarConfig.global.customHolidayRules, rule],
     );
     _service = null;
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
@@ -138,6 +140,7 @@ class MyanmarCalendar {
       ],
     );
     _service = null;
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
@@ -152,6 +155,7 @@ class MyanmarCalendar {
           .toList(),
     );
     _service = null;
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
@@ -164,6 +168,7 @@ class MyanmarCalendar {
       customHolidayRules: [],
     );
     _service = null;
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
     cache
       ..clearHolidayInfoCache()
@@ -180,10 +185,33 @@ class MyanmarCalendar {
     return _service!;
   }
 
+  /// Services for per-call configs, most recently used last. Results are
+  /// cached under each config's own namespace, so sharing the global cache
+  /// never mixes them.
+  static final _configServices = <CalendarConfig, MyanmarCalendarService>{};
+  static const _maxConfigServices = 8;
+
+  /// The service for [config], or the global one when [config] is null.
+  /// Never changes the global configuration.
+  static MyanmarCalendarService _serviceFor(CalendarConfig? config) {
+    if (config == null || config == CalendarConfig.global) {
+      return _serviceInstance;
+    }
+    final service =
+        _configServices.remove(config) ??
+        MyanmarCalendarService.withGlobalCache(config: config);
+    _configServices[config] = service;
+    if (_configServices.length > _maxConfigServices) {
+      _configServices.remove(_configServices.keys.first);
+    }
+    return service;
+  }
+
   /// Configure global cache used by all MyanmarCalendar operations
   static void configureCache(CacheConfig cacheConfig) {
     CalendarCache.configureGlobal(cacheConfig);
     _service = null; // Reset service to use new cache
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
   }
 
@@ -334,13 +362,14 @@ class MyanmarCalendar {
   /// Create Myanmar date from milliseconds since epoch
   ///
   /// Converts Unix timestamp (milliseconds since epoch) to Myanmar date.
+  /// The value is an instant, shown in the configured time zone.
   static MyanmarDateTime fromMillisecondsSinceEpoch(
     int milliseconds, {
+    @Deprecated('Epoch values are instants; this flag has no effect.')
     bool isUtc = false,
   }) {
     return MyanmarDateTime.fromMillisecondsSinceEpoch(
       milliseconds,
-      isUtc: isUtc,
       config: config,
     );
   }
@@ -409,8 +438,38 @@ class MyanmarCalendar {
   /// print('Moon phase: ${complete.moonPhase}');
   /// print('Astrological days: ${complete.astrologicalDays}');
   /// ```
-  static CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
-    return _serviceInstance.getCompleteDate(dateTime, language: language);
+  ///
+  /// Pass [config] to use another time zone or holiday rules for this call
+  /// only, without changing the global configuration.
+  static CompleteDate getCompleteDate(
+    DateTime dateTime, {
+    Language? language,
+    CalendarConfig? config,
+  }) {
+    return _serviceFor(
+      config,
+    ).getCompleteDate(dateTime, language: language);
+  }
+
+  /// Complete information for the calendar day [year]-[month]-[day].
+  ///
+  /// No time of day or time zone is involved, so this is the safest way to
+  /// look up a day on a calendar grid.
+  ///
+  /// Example:
+  /// ```dart
+  /// final day = MyanmarCalendar.getCompleteDateFor(2026, 10, 18);
+  /// ```
+  static CompleteDate getCompleteDateFor(
+    int year,
+    int month,
+    int day, {
+    Language? language,
+    CalendarConfig? config,
+  }) {
+    return _serviceFor(
+      config,
+    ).getCompleteDateFor(year, month, day, language: language);
   }
 
   /// Generate a structured AI prompt for a date
@@ -447,8 +506,12 @@ class MyanmarCalendar {
   ///
   /// Returns [HolidayInfo] containing public, religious, and cultural
   /// holidays for the given Myanmar date.
-  static HolidayInfo getHolidayInfo(MyanmarDate date, {Language? language}) {
-    return _serviceInstance.getHolidayInfo(date, language: language);
+  static HolidayInfo getHolidayInfo(
+    MyanmarDate date, {
+    Language? language,
+    CalendarConfig? config,
+  }) {
+    return _serviceFor(config).getHolidayInfo(date, language: language);
   }
 
   /// Check if a Myanmar year is a watat year
@@ -478,13 +541,21 @@ class MyanmarCalendar {
   ///
   /// Returns a list of [MyanmarDate] objects representing all days
   /// in the specified Myanmar month and year.
-  static List<MyanmarDate> getMyanmarMonth(int year, int month) {
-    return _serviceInstance.getMyanmarMonth(year, month);
+  static List<MyanmarDate> getMyanmarMonth(
+    int year,
+    int month, {
+    CalendarConfig? config,
+  }) {
+    return _serviceFor(config).getMyanmarMonth(year, month);
   }
 
   /// Get Western dates for a Myanmar month
-  static List<DateTime> getWesternDatesForMyanmarMonth(int year, int month) {
-    return _serviceInstance.getWesternDatesForMyanmarMonth(year, month);
+  static List<DateTime> getWesternDatesForMyanmarMonth(
+    int year,
+    int month, {
+    CalendarConfig? config,
+  }) {
+    return _serviceFor(config).getWesternDatesForMyanmarMonth(year, month);
   }
 
   /// Find auspicious days for a given Myanmar month and year
@@ -492,8 +563,9 @@ class MyanmarCalendar {
     int year,
     int month, {
     Language? language,
+    CalendarConfig? config,
   }) {
-    return _serviceInstance.findAuspiciousDays(
+    return _serviceFor(config).findAuspiciousDays(
       year,
       month,
       language: language,
@@ -691,6 +763,7 @@ class MyanmarCalendar {
       defaultLanguage: language.code,
     );
     _service = null;
+    _configServices.clear();
     _chronicles = null;
     MyanmarDateTime.clearSharedInstances();
     cache
@@ -786,7 +859,15 @@ class MyanmarCalendar {
   static List<CompleteDate> getCompleteDates(
     List<DateTime> dates, {
     Language? language,
+    CalendarConfig? config,
   }) {
+    if (config != null && config != CalendarConfig.global) {
+      final service = _serviceFor(config);
+      return [
+        for (final date in dates)
+          service.getCompleteDate(date, language: language),
+      ];
+    }
     return CalendarUtils.getCompleteDatesForWesternDates(
       dates,
       language: language,
@@ -831,6 +912,7 @@ class MyanmarCalendar {
     CalendarConfig.global = const CalendarConfig();
     _chronicles = null;
     _service = null;
+    _configServices.clear();
     MyanmarDateTime.clearSharedInstances();
     cache.clearAll();
   }
