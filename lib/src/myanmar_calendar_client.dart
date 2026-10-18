@@ -372,12 +372,8 @@ class MyanmarCalendarClient {
     return validateMyanmar(year, month, day).isValid;
   }
 
-  /// Returns cache statistics map (legacy shape).
-  Map<String, dynamic> getCacheStatistics() => _service.getCacheStatistics();
-
-  /// Returns typed cache statistics.
-  CalendarCacheStatistics getTypedCacheStatistics() =>
-      _service.getTypedCacheStatistics();
+  /// Cache statistics for this client (`toMap()` gives a map).
+  CalendarCacheStatistics getCacheStatistics() => _service.getCacheStatistics();
 
   /// Clears all cache entries used by this client.
   void clearCache() => _service.clearCache();

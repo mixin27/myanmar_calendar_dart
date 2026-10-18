@@ -701,8 +701,8 @@ class CalendarCache {
     return _hits / total;
   }
 
-  /// Get typed cache statistics snapshot.
-  CalendarCacheStatistics getTypedStatistics() {
+  /// A snapshot of the cache's statistics (`toMap()` gives a map).
+  CalendarCacheStatistics getStatistics() {
     return CalendarCacheStatistics(
       enabled: _config.enableCaching,
       hits: _hits,
@@ -714,11 +714,6 @@ class CalendarCache {
       astroInfo: _astroInfoCache.getStats(),
       holidayInfo: _holidayInfoCache.getStats(),
     );
-  }
-
-  /// Legacy map-based statistics for backward compatibility.
-  Map<String, dynamic> getStatistics() {
-    return getTypedStatistics().toMap();
   }
 
   /// Reset statistics

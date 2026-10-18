@@ -238,7 +238,7 @@ void _runExample(_ExampleOptions options) {
     );
   }
 
-  final typedStats = client.getTypedCacheStatistics();
+  final typedStats = client.getCacheStatistics();
   print('Requests: ${typedStats.totalRequests}');
   print('Hits    : ${typedStats.hits}');
   print('Misses  : ${typedStats.misses}');

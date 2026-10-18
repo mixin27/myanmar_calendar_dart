@@ -67,5 +67,5 @@ export 'src/models/western_holiday_provider.dart';
 // Public API
 export 'src/myanmar_calendar_client.dart';
 export 'src/myanmar_calendar_dart.dart';
+
 // Services
-export 'src/services/ai_prompt_service.dart';

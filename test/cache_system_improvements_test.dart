@@ -102,7 +102,7 @@ void main() {
 
     test('typed cache statistics are available', () {
       final cache = CalendarCache.independent();
-      final stats = cache.getTypedStatistics();
+      final stats = cache.getStatistics();
 
       expect(stats.enabled, isTrue);
       expect(stats.completeDate.maxSize, greaterThanOrEqualTo(0));

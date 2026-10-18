@@ -358,11 +358,7 @@ class MyanmarCalendarService {
   int getYearType(int year) => _dateConverter.calculateYearType(year);
 
   /// Get cache statistics
-  Map<String, dynamic> getCacheStatistics() => _cache.getStatistics();
-
-  /// Get typed cache statistics.
-  CalendarCacheStatistics getTypedCacheStatistics() =>
-      _cache.getTypedStatistics();
+  CalendarCacheStatistics getCacheStatistics() => _cache.getStatistics();
 
   /// Reset cache statistics.
   void resetCacheStatistics() => _cache.resetStatistics();

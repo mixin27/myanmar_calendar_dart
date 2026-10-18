@@ -679,7 +679,8 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Microseconds since epoch of this instant.
   int get microsecondsSinceEpoch => toUtc().microsecondsSinceEpoch;
 
-  /// Create a copy with different time components
+  /// A copy with some Western date and time fields changed. Times are
+  /// whole seconds.
   MyanmarDateTime copyWith({
     int? year,
     int? month,
@@ -687,8 +688,6 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
     int? hour,
     int? minute,
     int? second,
-    int? millisecond,
-    bool? isUtc,
   }) {
     final currentWestern = westernDate;
 
@@ -744,20 +743,20 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
 
   /// Get the start of the day (00:00:00)
   MyanmarDateTime get startOfDay {
-    return copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
+    return copyWith(hour: 0, minute: 0, second: 0);
   }
 
-  /// Get the end of the day (23:59:59.999)
+  /// Get the end of the day (23:59:59)
   MyanmarDateTime get endOfDay {
-    return copyWith(hour: 23, minute: 59, second: 59, millisecond: 999);
+    return copyWith(hour: 23, minute: 59, second: 59);
   }
 
   /// Get the start of the month (first day, 00:00:00)
   MyanmarDateTime get startOfMonth {
-    return copyWith(day: 1, hour: 0, minute: 0, second: 0, millisecond: 0);
+    return copyWith(day: 1, hour: 0, minute: 0, second: 0);
   }
 
-  /// Get the end of the month (last day, 23:59:59.999)
+  /// Get the end of the Western month (last day, 23:59:59)
   MyanmarDateTime get endOfMonth {
     // The Western month, like startOfMonth. (It used the Myanmar month's
     // length as a Western day, so a 30-day Myanmar month threw in
@@ -769,7 +768,6 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
       hour: 23,
       minute: 59,
       second: 59,
-      millisecond: 999,
     );
   }
 

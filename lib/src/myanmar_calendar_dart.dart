@@ -15,7 +15,6 @@ import 'package:myanmar_calendar_dart/src/models/validation_result.dart';
 import 'package:myanmar_calendar_dart/src/models/western_date.dart';
 import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
 import 'package:myanmar_calendar_dart/src/myanmar_calendar_client.dart';
-import 'package:myanmar_calendar_dart/src/services/ai_prompt_service.dart';
 import 'package:myanmar_calendar_dart/src/utils/package_constants.dart';
 import 'package:myanmar_calendar_dart/src/utils/shan_calendar_constants.dart';
 
@@ -218,14 +217,9 @@ class MyanmarCalendar {
     cache.clearAll();
   }
 
-  /// Get global cache statistics
-  static Map<String, dynamic> getCacheStatistics() {
+  /// Global cache statistics (`toMap()` gives a map).
+  static CalendarCacheStatistics getCacheStatistics() {
     return cache.getStatistics();
-  }
-
-  /// Get typed global cache statistics.
-  static CalendarCacheStatistics getTypedCacheStatistics() {
-    return cache.getTypedStatistics();
   }
 
   /// Warm up global cache
@@ -450,28 +444,6 @@ class MyanmarCalendar {
     return _clientFor(
       config,
     ).getCompleteDateFor(year, month, day, language: language);
-  }
-
-  /// Generate a structured AI prompt for a date
-  ///
-  /// Returns a prompt string that can be used with AI platforms to get
-  /// astrological readings, fortune-telling, or divination.
-  ///
-  /// Example:
-  /// ```dart
-  /// final completeDate = MyanmarCalendar.getCompleteDate(DateTime.now());
-  /// final prompt = MyanmarCalendar.generateAIPrompt(
-  ///   completeDate,
-  ///   language: Language.english,
-  ///   type: AIPromptType.fortuneTelling,
-  /// );
-  /// ```
-  static String generateAIPrompt(
-    CompleteDate date, {
-    Language? language,
-    AIPromptType type = AIPromptType.horoscope,
-  }) {
-    return AIPromptService.generatePrompt(date, language: language, type: type);
   }
 
   /// Get astrological information for a date

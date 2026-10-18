@@ -2422,6 +2422,3 @@ const List<ChronicleEntryData> kChronicleEntries = [
     },
   ),
 ];
-
-/// Predefined ruler data.
-const List<RulerData> kRulers = [];

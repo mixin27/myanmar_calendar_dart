@@ -69,8 +69,8 @@ void main() {
         ..getCompleteDate(date);
       clientB.resetCacheStatistics();
 
-      final statsA = clientA.getTypedCacheStatistics();
-      final statsB = clientB.getTypedCacheStatistics();
+      final statsA = clientA.getCacheStatistics();
+      final statsB = clientB.getCacheStatistics();
 
       expect(statsA.totalRequests, greaterThan(0));
       expect(statsA.hits, greaterThan(0));
