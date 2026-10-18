@@ -52,6 +52,7 @@ export 'src/localization/language.dart';
 export 'src/localization/translation_service.dart';
 // Models
 export 'src/models/astro_info.dart';
+export 'src/models/calendar_enums.dart';
 export 'src/models/chronicle_models.dart';
 export 'src/models/complete_date.dart';
 export 'src/models/custom_holiday.dart';

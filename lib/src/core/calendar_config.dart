@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
 import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
@@ -117,6 +118,12 @@ class CalendarConfig {
 
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
+
+  /// [calendarType] as a [CalendarSystem].
+  CalendarSystem get calendarSystem => CalendarSystem.fromCode(calendarType);
+
+  /// [sasanaYearType] as a [SasanaYearType].
+  SasanaYearType get sasanaYear => SasanaYearType.fromCode(sasanaYearType);
 
   /// Convert local time to UTC Julian Day Number
   double localToUtc(double localJdn) => localJdn - timezoneOffsetInDays;

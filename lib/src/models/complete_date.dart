@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
 import 'package:myanmar_calendar_dart/src/models/shan_date.dart';
@@ -211,6 +212,9 @@ class CompleteDate {
   /// Gets the moon phase (0=waxing, 1=full moon, 2=waning, 3=new moon)
   int get moonPhase => myanmar.moonPhase;
 
+  /// [moonPhase] as a [MoonPhase].
+  MoonPhase get phase => myanmar.phase;
+
   /// Check moon phase is full moon.
   bool get isFullMoon => moonPhase == 1;
 
@@ -222,6 +226,9 @@ class CompleteDate {
 
   /// Gets the year type (0=common, 1=little watat, 2=big watat)
   int get yearType => myanmar.yearType;
+
+  /// [yearType] as a [MyanmarYearType].
+  MyanmarYearType get yearKind => myanmar.yearKind;
 
   /// Checks if this date has any holidays
   bool get hasHolidays => holidays.hasHolidays;

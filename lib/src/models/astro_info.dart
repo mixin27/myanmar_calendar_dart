@@ -1,3 +1,5 @@
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
+
 /// Contains astronomical and astrological information for a Myanmar date
 class AstroInfo {
   /// Create a new astro info
@@ -17,6 +19,13 @@ class AstroInfo {
 
   /// Sabbath
   final String sabbath;
+
+  /// [sabbath] as a [SabbathType].
+  SabbathType get sabbathType => switch (sabbath) {
+    'Sabbath' => SabbathType.sabbath,
+    'Sabbath Eve' => SabbathType.sabbathEve,
+    _ => SabbathType.none,
+  };
 
   /// Yatyaza
   final String yatyaza;

@@ -2,6 +2,7 @@ import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
+import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
 import 'package:myanmar_calendar_dart/src/models/myanmar_date.dart';
@@ -341,6 +342,9 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Year type (0=common, 1=little watat, 2=big watat)
   int get yearType => myanmarDate.yearType;
 
+  /// [yearType] as a [MyanmarYearType].
+  MyanmarYearType get yearKind => myanmarDate.yearKind;
+
   /// Sasana year
   int get sasanaYear => myanmarDate.sasanaYear;
 
@@ -349,6 +353,9 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
 
   /// Moon phase (0=waxing, 1=full moon, 2=waning, 3=new moon)
   int get moonPhase => myanmarDate.moonPhase;
+
+  /// [moonPhase] as a [MoonPhase].
+  MoonPhase get phase => myanmarDate.phase;
 
   /// Fortnight day (1-15)
   int get fortnightDay => myanmarDate.fortnightDay;
