@@ -1,4 +1,4 @@
-## 3.0.1 (unreleased)
+## 3.0.1
 
 ### Fixes
 
