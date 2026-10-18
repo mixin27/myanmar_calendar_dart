@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:meta/meta.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
 import 'package:myanmar_calendar_dart/src/models/western_holiday_provider.dart';
@@ -48,8 +49,20 @@ class CalendarConfig {
   /// Get the package-wide global configuration
   static CalendarConfig get global => _global;
 
-  /// Set the package-wide global configuration
-  static set global(CalendarConfig config) => _global = config;
+  /// Set the package-wide global configuration.
+  ///
+  /// `MyanmarCalendar.configure` is the usual way; assigning here directly is
+  /// also safe, because shared services and caches are refreshed either way.
+  static set global(CalendarConfig config) {
+    if (identical(config, _global)) return;
+    _global = config;
+    onGlobalChanged?.call();
+  }
+
+  /// Called after [global] changes; set by `MyanmarCalendar` to drop state
+  /// built for the previous configuration.
+  @internal
+  static void Function()? onGlobalChanged;
 
   /// Sasana year type
   ///

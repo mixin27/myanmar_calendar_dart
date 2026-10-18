@@ -37,14 +37,15 @@ class CalendarUtils {
   /// ```
   static List<MyanmarDate> generateMyanmarDateRange(
     MyanmarDate startDate,
-    MyanmarDate endDate,
-  ) {
+    MyanmarDate endDate, {
+    MyanmarCalendarService? service,
+  }) {
     if (startDate.julianDayNumber > endDate.julianDayNumber) {
       throw ArgumentError('Start date must be before or equal to end date');
     }
 
     final dates = <MyanmarDate>[];
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
 
     var currentJdn = startDate.julianDayNumber;
     final endJdn = endDate.julianDayNumber;
@@ -84,8 +85,12 @@ class CalendarUtils {
   /// Generates dates for a specific Myanmar month
   ///
   /// Returns all dates within the specified Myanmar month and year.
-  static List<MyanmarDate> generateMyanmarMonth(int year, int month) {
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> generateMyanmarMonth(
+    int year,
+    int month, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     return service.getMyanmarMonth(year, month);
   }
 
@@ -127,8 +132,12 @@ class CalendarUtils {
   ///
   /// Returns a new Myanmar date that is [days] days after the input date.
   /// Use negative values to subtract days.
-  static MyanmarDate addDaysToMyanmarDate(MyanmarDate date, int days) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate addDaysToMyanmarDate(
+    MyanmarDate date,
+    int days, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final newJdn = date.julianDayNumber + days;
     return service.myanmarForLocalDay(newJdn);
   }
@@ -138,8 +147,12 @@ class CalendarUtils {
   /// Month progression is computed from real Myanmar month transitions rather
   /// than arithmetic approximation, so edge cases around intercalary months
   /// and variable month lengths remain consistent.
-  static MyanmarDate addMonthsToMyanmarDate(MyanmarDate date, int months) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate addMonthsToMyanmarDate(
+    MyanmarDate date,
+    int months, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     if (months == 0) {
       return service.myanmarForLocalDay(date.julianDayNumber);
     }
@@ -274,8 +287,12 @@ class CalendarUtils {
   ///
   /// Returns the next Myanmar date that has the specified moon phase,
   /// starting from the given date (exclusive).
-  static MyanmarDate findNextMoonPhase(MyanmarDate startDate, int moonPhase) {
-    final service = MyanmarCalendarService();
+  static MyanmarDate findNextMoonPhase(
+    MyanmarDate startDate,
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     var currentJdn = startDate.julianDayNumber + 1;
 
     // Limit search to avoid infinite loops
@@ -298,9 +315,10 @@ class CalendarUtils {
   /// starting from the given date (exclusive).
   static MyanmarDate findPreviousMoonPhase(
     MyanmarDate startDate,
-    int moonPhase,
-  ) {
-    final service = MyanmarCalendarService();
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     var currentJdn = startDate.julianDayNumber - 1;
 
     // Limit search to avoid infinite loops
@@ -322,8 +340,12 @@ class CalendarUtils {
   /// Finds all dates with specific moon phase in a year
   ///
   /// Returns all Myanmar dates in the specified year that have the given moon phase.
-  static List<MyanmarDate> findMoonPhaseDatesInYear(int year, int moonPhase) {
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> findMoonPhaseDatesInYear(
+    int year,
+    int moonPhase, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final dates = <MyanmarDate>[];
 
     // Start from the beginning of the year
@@ -348,12 +370,16 @@ class CalendarUtils {
   /// Finds all sabbath days in a Myanmar month
   ///
   /// Returns all dates in the specified month that are sabbath days.
-  static List<MyanmarDate> findSabbathDaysInMonth(int year, int month) {
-    final monthDates = generateMyanmarMonth(year, month);
-    final service = MyanmarCalendarService();
+  static List<MyanmarDate> findSabbathDaysInMonth(
+    int year,
+    int month, {
+    MyanmarCalendarService? service,
+  }) {
+    final calendar = service ?? MyanmarCalendarService();
+    final monthDates = generateMyanmarMonth(year, month, service: calendar);
 
     return monthDates.where((date) {
-      final astro = service.getAstroInfo(date);
+      final astro = calendar.getAstroInfo(date);
       return astro.sabbath == 'Sabbath';
     }).toList();
   }
@@ -487,9 +513,10 @@ class CalendarUtils {
   /// Efficiently converts a list of Western dates to Myanmar dates.
   /// Processing is done in batches to optimize performance.
   static List<MyanmarDate> convertWesternDatesToMyanmar(
-    List<DateTime> westernDates,
-  ) {
-    final service = MyanmarCalendarService();
+    List<DateTime> westernDates, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <MyanmarDate>[];
 
     // Process in batches to avoid memory issues with large lists
@@ -511,9 +538,10 @@ class CalendarUtils {
   ///
   /// Efficiently converts a list of Myanmar dates to Western dates.
   static List<DateTime> convertMyanmarDatesToWestern(
-    List<MyanmarDate> myanmarDates,
-  ) {
-    final service = MyanmarCalendarService();
+    List<MyanmarDate> myanmarDates, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <DateTime>[];
 
     const batchSize = PackageConstants.maxBatchSize;
@@ -542,8 +570,9 @@ class CalendarUtils {
   static List<CompleteDate> getCompleteDatesForWesternDates(
     List<DateTime> dates, {
     Language? language,
+    MyanmarCalendarService? service,
   }) {
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
     final results = <CompleteDate>[];
 
     const batchSize = PackageConstants.maxBatchSize;
@@ -568,8 +597,9 @@ class CalendarUtils {
   ///
   /// Returns various statistics about the date range including span, average, etc.
   static Map<String, dynamic> calculateMyanmarDateStatistics(
-    List<MyanmarDate> dates,
-  ) {
+    List<MyanmarDate> dates, {
+    MyanmarCalendarService? service,
+  }) {
     if (dates.isEmpty) {
       return {'count': 0};
     }
@@ -587,7 +617,7 @@ class CalendarUtils {
         ? (jdns[middle - 1] + jdns[middle]) / 2
         : jdns[middle];
 
-    final service = MyanmarCalendarService();
+    service ??= MyanmarCalendarService();
 
     return {
       'count': dates.length,
@@ -654,9 +684,10 @@ class CalendarUtils {
   ///
   /// Returns validation results for each date in the list.
   static List<ValidationResult> validateMyanmarDates(
-    List<Map<String, int>> dateMaps,
-  ) {
-    final service = MyanmarCalendarService();
+    List<Map<String, int>> dateMaps, {
+    MyanmarCalendarService? service,
+  }) {
+    service ??= MyanmarCalendarService();
     final results = <ValidationResult>[];
 
     for (final dateMap in dateMaps) {

@@ -50,12 +50,9 @@ class MyanmarDateTime implements Comparable<MyanmarDateTime> {
   /// Creates Myanmar DateTime from milliseconds since epoch.
   ///
   /// The value is an instant, shown in the configured time zone whatever the
-  /// device's zone. [isUtc] no longer changes the result and is kept only so
-  /// existing calls compile.
+  /// device's zone.
   factory MyanmarDateTime.fromMillisecondsSinceEpoch(
     int milliseconds, {
-    @Deprecated('Epoch values are instants; this flag has no effect.')
-    bool isUtc = false,
     CalendarConfig? config,
   }) {
     final dateTime = DateTime.fromMillisecondsSinceEpoch(
