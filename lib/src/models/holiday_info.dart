@@ -1,3 +1,47 @@
+import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
+import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
+
+/// One holiday or anniversary on a date: what it is ([id] or [customId]),
+/// its [type] and its display [name] in the requested language.
+class Holiday {
+  /// Creates a holiday entry.
+  const Holiday({
+    required this.type,
+    required this.name,
+    this.id,
+    this.customId,
+  });
+
+  /// The built-in holiday, or null for a custom one.
+  final HolidayId? id;
+
+  /// The `CustomHoliday.id` of a custom holiday, or null for a built-in one.
+  final String? customId;
+
+  /// Its category.
+  final HolidayType type;
+
+  /// Its name, translated; use [id] or [customId] to tell holidays apart.
+  final String name;
+
+  /// Whether it comes from a custom holiday rule.
+  bool get isCustom => customId != null;
+
+  @override
+  bool operator ==(Object other) =>
+      other is Holiday &&
+      other.id == id &&
+      other.customId == customId &&
+      other.type == type &&
+      other.name == name;
+
+  @override
+  int get hashCode => Object.hash(id, customId, type, name);
+
+  @override
+  String toString() => 'Holiday(${id?.name ?? customId}, ${type.name}, $name)';
+}
+
 /// Contains holiday information for a given date
 class HolidayInfo {
   /// Create a new holiday info
@@ -8,12 +52,30 @@ class HolidayInfo {
     required List<String> otherHolidays,
     required List<String> myanmarAnniversaryDays,
     required List<String> otherAnniversaryDays,
-  }) : publicHolidays = List.unmodifiable(publicHolidays),
+    List<Holiday> entries = const [],
+  }) : entries = List.unmodifiable(entries),
+       publicHolidays = List.unmodifiable(publicHolidays),
        religiousHolidays = List.unmodifiable(religiousHolidays),
        culturalHolidays = List.unmodifiable(culturalHolidays),
        otherHolidays = List.unmodifiable(otherHolidays),
        myanmarAnniversaryDays = List.unmodifiable(myanmarAnniversaryDays),
        otherAnniversaryDays = List.unmodifiable(otherAnniversaryDays);
+
+  /// Every holiday and anniversary on the date, with stable IDs. The name
+  /// lists below hold the same names, for display.
+  final List<Holiday> entries;
+
+  /// Whether the date has the built-in holiday [id], whatever the language.
+  bool has(HolidayId id) => entries.any((h) => h.id == id);
+
+  /// Whether the date has the custom holiday with `CustomHoliday.id` [id].
+  bool hasCustom(String id) => entries.any((h) => h.customId == id);
+
+  /// Entries of one [type].
+  List<Holiday> ofType(HolidayType type) => [
+    for (final h in entries)
+      if (h.type == type) h,
+  ];
 
   /// Public holidays
   final List<String> publicHolidays;
