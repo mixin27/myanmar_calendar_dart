@@ -34,7 +34,7 @@ class MyanmarCalendarClient {
     CalendarConfig? config,
     CacheConfig cacheConfig = const CacheConfig(),
     bool useGlobalCache = false,
-  }) : _config = config ?? const CalendarConfig(),
+  }) : _config = (config ?? const CalendarConfig())..validate(),
        _cacheConfig = cacheConfig,
        _useGlobalCache = useGlobalCache,
        // Never fall back to the global config: a client is isolated.

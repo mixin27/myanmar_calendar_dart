@@ -83,7 +83,9 @@ class HolidayCalculator {
     // The namespace already covers the config, including its disabled and
     // custom holidays, and a Myanmar date fixes the Western date. Only a
     // custom-holiday list other than the config's needs adding.
-    final key = '${date.year}-${date.month}-${date.day}|${language.code}';
+    final key =
+        '${date.year}-${date.month}-${date.day}|${language.code}'
+        '|t${TranslationService.revision}';
     if (customHolidays.isEmpty ||
         identical(customHolidays, _config.customHolidays)) {
       return key;

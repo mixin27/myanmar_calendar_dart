@@ -1,5 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
+import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
+import 'package:myanmar_calendar_dart/src/localization/language.dart';
 import 'package:myanmar_calendar_dart/src/models/calendar_enums.dart';
 import 'package:myanmar_calendar_dart/src/models/custom_holiday.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_id.dart';
@@ -119,6 +121,31 @@ class CalendarConfig {
   /// Get the current timezone offset in days
   double get timezoneOffsetInDays => timezoneOffset / 24.0;
 
+  /// [defaultLanguage] as a [Language] (English for an unknown code; see
+  /// [validate]).
+  Language get language => Language.fromCode(defaultLanguage);
+
+  /// Throws [InvalidConfigurationException] for a value outside its range or
+  /// an unknown [defaultLanguage]. The constructor only checks these with
+  /// asserts, which release builds skip.
+  void validate() {
+    Never invalid(String parameter, Object value) =>
+        throw InvalidConfigurationException(parameter: parameter, value: value);
+    if (sasanaYearType < 0 || sasanaYearType > 2) {
+      invalid('sasanaYearType', sasanaYearType);
+    }
+    if (calendarType < 0 || calendarType > 2) {
+      invalid('calendarType', calendarType);
+    }
+    if (timezoneOffset < -12 || timezoneOffset > 14) {
+      invalid('timezoneOffset', timezoneOffset);
+    }
+    if (gregorianStart <= 0) invalid('gregorianStart', gregorianStart);
+    if (Language.tryFromCode(defaultLanguage) == null) {
+      invalid('defaultLanguage', defaultLanguage);
+    }
+  }
+
   /// [calendarType] as a [CalendarSystem].
   CalendarSystem get calendarSystem => CalendarSystem.fromCode(calendarType);
 
@@ -227,11 +254,12 @@ class CalendarConfig {
           other.disabledHolidays,
           disabledHolidays,
         ) &&
-        const MapEquality<int, List<HolidayId>>().equals(
+        // Deep: lists built separately with the same holidays are equal.
+        const DeepCollectionEquality().equals(
           other.disabledHolidaysByYear,
           disabledHolidaysByYear,
         ) &&
-        const MapEquality<String, List<HolidayId>>().equals(
+        const DeepCollectionEquality().equals(
           other.disabledHolidaysByDate,
           disabledHolidaysByDate,
         ) &&
@@ -248,10 +276,8 @@ class CalendarConfig {
         defaultLanguage.hashCode ^
         const ListEquality<CustomHoliday>().hash(customHolidays) ^
         const ListEquality<HolidayId>().hash(disabledHolidays) ^
-        const MapEquality<int, List<HolidayId>>().hash(disabledHolidaysByYear) ^
-        const MapEquality<String, List<HolidayId>>().hash(
-          disabledHolidaysByDate,
-        ) ^
+        const DeepCollectionEquality().hash(disabledHolidaysByYear) ^
+        const DeepCollectionEquality().hash(disabledHolidaysByDate) ^
         westernHolidayProvider.cacheKey.hashCode;
   }
 }

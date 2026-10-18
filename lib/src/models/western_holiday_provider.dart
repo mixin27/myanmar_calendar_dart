@@ -31,18 +31,18 @@ class WesternHolidayDate {
 
 /// Provider contract for western-calendar holiday rules that are not derived
 /// from the Myanmar calendar itself.
-class WesternHolidayProvider {
+abstract class WesternHolidayProvider {
   /// Creates a [WesternHolidayProvider].
   const WesternHolidayProvider();
 
-  /// Stable cache key for this provider configuration.
-  ///
-  /// Custom providers should override this when underlying rule data changes
-  /// over time while reusing the same class name.
-  String get cacheKey => 'provider_type_${runtimeType.hashCode}';
+  /// A key that changes whenever the provider's rules do. Results are cached
+  /// by it, so two providers with different rules need different keys.
+  /// (It used to default to the class's hash, so differently configured
+  /// instances of one class shared cached results.)
+  String get cacheKey;
 
   /// Returns true when [holidayId] matches [year]-[month]-[day].
-  bool matches(HolidayId holidayId, int year, int month, int day) => false;
+  bool matches(HolidayId holidayId, int year, int month, int day);
 }
 
 /// Table-driven holiday provider for easy consumer overrides.

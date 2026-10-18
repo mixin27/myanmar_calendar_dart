@@ -318,18 +318,20 @@ class FormatService {
 
   /// Translate numbers to the current language
   String translateNumbers(String text, {Language? language}) {
-    final currentLang = language ?? Language.english;
+    final digits = TranslationService.digitsFor(language ?? Language.english);
+    if (digits == null) return text;
 
-    if (!TranslationService.shouldTranslateDigits(currentLang)) return text;
-
-    var result = text;
-    for (var i = 0; i <= 9; i++) {
-      result = result.replaceAll(
-        i.toString(),
-        TranslationService.translateTo(i.toString(), currentLang),
-      );
+    // One pass over the text instead of ten replaceAll copies.
+    final out = StringBuffer();
+    for (final unit in text.codeUnits) {
+      final digit = unit - 0x30;
+      if (digit >= 0 && digit <= 9) {
+        out.write(digits[digit]);
+      } else {
+        out.writeCharCode(unit);
+      }
     }
-    return result;
+    return out.toString();
   }
 
   /// Format astro information

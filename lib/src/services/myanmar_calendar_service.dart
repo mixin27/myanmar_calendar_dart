@@ -2,6 +2,7 @@ import 'package:myanmar_calendar_dart/src/core/calendar_cache.dart';
 import 'package:myanmar_calendar_dart/src/core/calendar_config.dart';
 import 'package:myanmar_calendar_dart/src/exceptions/calendar_exceptions.dart';
 import 'package:myanmar_calendar_dart/src/localization/language.dart';
+import 'package:myanmar_calendar_dart/src/localization/translation_service.dart';
 import 'package:myanmar_calendar_dart/src/models/astro_info.dart';
 import 'package:myanmar_calendar_dart/src/models/complete_date.dart';
 import 'package:myanmar_calendar_dart/src/models/holiday_info.dart';
@@ -246,7 +247,8 @@ class MyanmarCalendarService {
   CompleteDate getCompleteDate(DateTime dateTime, {Language? language}) {
     final resolvedLanguage = language ?? _defaultLanguage;
     final completeDateNamespace =
-        'complete_date|$_cacheNamespace|lang:${resolvedLanguage.code}';
+        'complete_date|$_cacheNamespace|lang:${resolvedLanguage.code}'
+        '|t${TranslationService.revision}';
 
     // One cache entry per calendar day: everything but the Western time
     // depends only on the day, so asking for "now" reuses it.
