@@ -1,3 +1,12 @@
+## Unreleased
+
+### Fixes
+
+- New Year's Day (1 January) is a public holiday again from 2022 onwards. It
+  stopped after 2021, following the reference implementation, which hasn't
+  been updated since; Myanmar has kept the holiday. Turn it off for a year
+  with `disabledHolidaysByYear` and `HolidayId.newYearDay`
+
 ## 3.0.1
 
 ### Fixes

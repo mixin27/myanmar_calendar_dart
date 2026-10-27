@@ -77,7 +77,8 @@ void main() {
           ...info.culturalHolidays,
         ])
           if (!_referenceAnniversaries.contains(name) &&
-              !_dartOnly.contains(name))
+              !_dartOnly.contains(name) &&
+              !_isNewerThanReference(name, w.year))
             _referenceName(name),
       ]..sort();
       final anniversaries = [
@@ -178,6 +179,11 @@ const _names = {
 
 /// In the reference's anniversary list, but religious holidays here.
 const _referenceAnniversaries = {'Easter', 'Good Friday'};
+
+/// Holidays declared after the reference (6.5) was written: New Year's Day
+/// stayed a public holiday after 2021, where the reference stops.
+bool _isNewerThanReference(String name, int year) =>
+    name == "New Year's" && year >= 2022;
 
 /// Holidays this package adds from its own tables; the reference has none.
 const _dartOnly = {
