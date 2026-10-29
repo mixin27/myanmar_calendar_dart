@@ -184,7 +184,7 @@ void main() {
       expect(info.publicHolidays, isNot(contains('Holiday')));
     });
 
-    test("New Year's Day was a public holiday only from 2018 to 2021", () {
+    test("New Year's Day has been a public holiday since 2018", () {
       List<String> publicOn(int year) => MyanmarCalendar.getCompleteDateFor(
         year,
         1,
@@ -193,7 +193,18 @@ void main() {
       ).publicHolidays;
       expect(publicOn(2017), isNot(contains("New Year's")));
       expect(publicOn(2019), contains("New Year's"));
-      expect(publicOn(2025), isNot(contains("New Year's")));
+      expect(publicOn(2022), contains("New Year's"));
+      expect(publicOn(2027), contains("New Year's"));
+      expect(
+        MyanmarCalendar.getCompleteDateFor(
+          2027,
+          1,
+          1,
+          language: Language.english,
+        ).allAnniversaryDays,
+        isNot(contains("New Year's")),
+        reason: 'a holiday, not also an anniversary',
+      );
     });
   });
 

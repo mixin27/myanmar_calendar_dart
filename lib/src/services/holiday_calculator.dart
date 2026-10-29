@@ -734,9 +734,8 @@ class HolidayCalculator {
     final month = westernDate['month']!;
     final day = westernDate['day']!;
 
-    // New Year's Day was a public holiday from 2018 to 2021
+    // New Year's Day has been a public holiday since 2018
     if (year >= 2018 &&
-        year <= 2021 &&
         month == 1 &&
         day == 1 &&
         !_isDisabled(HolidayId.newYearDay, year, month, day)) {
