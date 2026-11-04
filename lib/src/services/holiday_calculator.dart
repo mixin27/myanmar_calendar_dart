@@ -40,6 +40,9 @@ class HolidayCalculator {
   final Language _defaultLanguage;
   final String _cacheNamespace;
 
+  /// First year Chinese New Year is a public holiday, not an anniversary.
+  static const int _chineseNewYearPublicSince = 2025;
+
   /// Get all holidays for a Myanmar date
   HolidayInfo getHolidays(
     MyanmarDate date, {
@@ -710,8 +713,9 @@ class HolidayCalculator {
       );
     }
 
-    // Chinese New Year
-    if (_matchesWesternHoliday(HolidayId.chineseNewYear, year, month, day) &&
+    // Chinese New Year was an anniversary, not a holiday, until 2024
+    if (year < _chineseNewYearPublicSince &&
+        _matchesWesternHoliday(HolidayId.chineseNewYear, year, month, day) &&
         !_isDisabled(HolidayId.chineseNewYear, year, month, day)) {
       _add(
         items,
@@ -734,8 +738,9 @@ class HolidayCalculator {
     final month = westernDate['month']!;
     final day = westernDate['day']!;
 
-    // New Year's Day has been a public holiday since 2018
-    if (year >= 2018 &&
+    // New Year's Day was a public holiday 2018-2021, was dropped 2022-2024,
+    // and has been one again since 2025
+    if (((year >= 2018 && year <= 2021) || year >= 2025) &&
         month == 1 &&
         day == 1 &&
         !_isDisabled(HolidayId.newYearDay, year, month, day)) {
@@ -744,6 +749,19 @@ class HolidayCalculator {
         HolidayType.public,
         _t("New Year's", language),
         id: HolidayId.newYearDay,
+      );
+    }
+
+    // Chinese New Year has been a public holiday since 2025. The provider
+    // gives the gazetted days (two in 2026); before 2025 it is an anniversary
+    if (year >= _chineseNewYearPublicSince &&
+        _matchesWesternHoliday(HolidayId.chineseNewYear, year, month, day) &&
+        !_isDisabled(HolidayId.chineseNewYear, year, month, day)) {
+      _add(
+        publicHolidays,
+        HolidayType.public,
+        _t("Chinese New Year's", language),
+        id: HolidayId.chineseNewYear,
       );
     }
 

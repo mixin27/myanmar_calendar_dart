@@ -146,7 +146,7 @@ class DefaultWesternHolidayProvider extends TableWesternHolidayProvider {
       );
 
   @override
-  String get cacheKey => 'default_western_holiday_provider:v1';
+  String get cacheKey => 'default_western_holiday_provider:v2';
 
   static const Map<HolidayId, Map<int, WesternHolidayDate>> _singleDayRules = {
     HolidayId.diwali: _diwaliDates,
@@ -157,6 +157,7 @@ class DefaultWesternHolidayProvider extends TableWesternHolidayProvider {
   _multiDayRules = {
     HolidayId.eidAlFitr: _eidAlFitrDates,
     HolidayId.eidAlAdha: _eidAlAdhaDates,
+    HolidayId.chineseNewYear: _chineseNewYearMultiDayDates,
   };
 
   static const Map<int, WesternHolidayDate> _diwaliDates = {
@@ -347,8 +348,9 @@ class DefaultWesternHolidayProvider extends TableWesternHolidayProvider {
     2023: WesternHolidayDate(month: 1, day: 22),
     2024: WesternHolidayDate(month: 2, day: 10),
     2025: WesternHolidayDate(month: 1, day: 29),
-    2026: WesternHolidayDate(month: 2, day: 17),
-    2027: WesternHolidayDate(month: 2, day: 6),
+    // 2026 is two days; see _chineseNewYearMultiDayDates
+    // The 2027 holiday list gazettes 7 February (the lunar new year is the 6th)
+    2027: WesternHolidayDate(month: 2, day: 7),
     2028: WesternHolidayDate(month: 1, day: 26),
     2029: WesternHolidayDate(month: 2, day: 13),
     2030: WesternHolidayDate(month: 2, day: 3),
@@ -358,4 +360,15 @@ class DefaultWesternHolidayProvider extends TableWesternHolidayProvider {
     2034: WesternHolidayDate(month: 2, day: 19),
     2035: WesternHolidayDate(month: 2, day: 8),
   };
+
+  /// Years whose Chinese New Year public holiday is more than one day.
+  /// A year listed here must not also be in `_chineseNewYearDates`, which
+  /// would take precedence.
+  static const Map<int, List<WesternHolidayDate>> _chineseNewYearMultiDayDates =
+      {
+        2026: [
+          WesternHolidayDate(month: 2, day: 16),
+          WesternHolidayDate(month: 2, day: 17),
+        ],
+      };
 }
