@@ -1,3 +1,19 @@
+## Unreleased
+
+### Fixes
+
+- New Year's Day (1 January) is a public holiday 2018–2021 and again from
+  2025, not in 2022–2024. 3.0.2 made it one every year from 2018; it was in
+  fact dropped after 2021 and announced again for the 2025 calendar
+- Chinese New Year is a public holiday from 2025 (`publicHolidays`, type
+  `HolidayType.public`); before 2025 it stays an anniversary. The default
+  provider now gives the gazetted days: 16 and 17 February 2026, and
+  7 February 2027 (the lunar new year is the 6th). Other years still use the
+  lunar new year's date. Turn it off for a year with `disabledHolidaysByYear`
+  and `HolidayId.chineseNewYear`
+- `DefaultWesternHolidayProvider.cacheKey` is now
+  `default_western_holiday_provider:v2`, since its dates changed
+
 ## 3.0.2
 
 ### Fixes

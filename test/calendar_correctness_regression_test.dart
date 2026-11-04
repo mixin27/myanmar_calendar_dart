@@ -184,7 +184,7 @@ void main() {
       expect(info.publicHolidays, isNot(contains('Holiday')));
     });
 
-    test("New Year's Day has been a public holiday since 2018", () {
+    test("New Year's Day is a public holiday 2018-2021 and since 2025", () {
       List<String> publicOn(int year) => MyanmarCalendar.getCompleteDateFor(
         year,
         1,
@@ -192,9 +192,24 @@ void main() {
         language: Language.english,
       ).publicHolidays;
       expect(publicOn(2017), isNot(contains("New Year's")));
+      expect(publicOn(2018), contains("New Year's"));
       expect(publicOn(2019), contains("New Year's"));
-      expect(publicOn(2022), contains("New Year's"));
+      expect(publicOn(2021), contains("New Year's"));
+      expect(publicOn(2022), isNot(contains("New Year's")));
+      expect(publicOn(2023), isNot(contains("New Year's")));
+      expect(publicOn(2024), isNot(contains("New Year's")));
+      expect(publicOn(2025), contains("New Year's"));
       expect(publicOn(2027), contains("New Year's"));
+      expect(
+        MyanmarCalendar.getCompleteDateFor(
+          2017,
+          1,
+          1,
+          language: Language.english,
+        ).allAnniversaryDays,
+        contains("New Year's"),
+        reason: 'an anniversary up to 2017',
+      );
       expect(
         MyanmarCalendar.getCompleteDateFor(
           2027,
@@ -205,6 +220,55 @@ void main() {
         isNot(contains("New Year's")),
         reason: 'a holiday, not also an anniversary',
       );
+    });
+
+    group('Chinese New Year', () {
+      HolidayInfo on(int year, int month, int day) =>
+          MyanmarCalendar.getCompleteDateFor(
+            year,
+            month,
+            day,
+            language: Language.english,
+          ).holidays;
+      const name = "Chinese New Year's";
+
+      test('is an anniversary up to 2024', () {
+        final info = on(2024, 2, 10);
+        expect(info.otherAnniversaryDays, contains(name));
+        expect(info.publicHolidays, isNot(contains(name)));
+      });
+
+      test('is a public holiday from 2025', () {
+        final info = on(2025, 1, 29);
+        expect(info.publicHolidays, contains(name));
+        expect(info.otherAnniversaryDays, isNot(contains(name)));
+      });
+
+      test('is two days in 2026, 16-17 February', () {
+        expect(on(2026, 2, 15).publicHolidays, isNot(contains(name)));
+        expect(on(2026, 2, 16).publicHolidays, contains(name));
+        expect(on(2026, 2, 17).publicHolidays, contains(name));
+        expect(on(2026, 2, 18).publicHolidays, isNot(contains(name)));
+      });
+
+      test('is 7 February in 2027, as gazetted', () {
+        expect(on(2027, 2, 6).publicHolidays, isNot(contains(name)));
+        expect(on(2027, 2, 7).publicHolidays, contains(name));
+      });
+
+      test('can still be turned off for a year', () {
+        final client = MyanmarCalendarClient(
+          config: const CalendarConfig(
+            disabledHolidaysByYear: {
+              2026: [HolidayId.chineseNewYear],
+            },
+          ),
+        );
+        final info = client
+            .getCompleteDateFor(2026, 2, 16, language: Language.english)
+            .holidays;
+        expect(info.publicHolidays, isNot(contains(name)));
+      });
     });
   });
 

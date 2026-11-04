@@ -181,9 +181,9 @@ const _names = {
 const _referenceAnniversaries = {'Easter', 'Good Friday'};
 
 /// Holidays declared after the reference (6.5) was written: New Year's Day
-/// stayed a public holiday after 2021, where the reference stops.
+/// became a public holiday again in 2025, after the reference's 2018-2021.
 bool _isNewerThanReference(String name, int year) =>
-    name == "New Year's" && year >= 2022;
+    name == "New Year's" && year >= 2025;
 
 /// Holidays this package adds from its own tables; the reference has none.
 const _dartOnly = {
